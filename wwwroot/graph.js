@@ -38,7 +38,7 @@ window.DrawGraph = (element, nodes, links, start_node, end_node) => {
         .force('center', null) //d3.forceCenter(width / 2, height / 2))
         .force('collision', d3.forceCollide().radius(150))
         .force('link', d3.forceLink().links(links)
-            .distance(300)
+            .distance(100)
             .id( (d) => d.id )
         )
         .force('y', d3.forceY(function(d){
@@ -66,35 +66,52 @@ window.DrawGraph = (element, nodes, links, start_node, end_node) => {
 
     // add nodes
     var node = svg.selectAll('.node')
-        .data(force.nodes())
-        .enter().append('circle')
-        .attr('class', 'node')
-        .attr('r', 18)
-        .call(d3.drag()
-            .on("start", (event, d) => {
-                if (!event.active) force.alphaTarget(0.3).restart();
-                d.fx = d.x;
-                d.fy = d.y;
-            })
-            .on("drag", (event, d) => {
-                d.fx = event.x;
-                d.fy = event.y;
-            })
-            // .on("end", (event, d) => {
-            //     if (!event.active) force.alphaTarget(0);
-            //     d.fx = null;
-            //     d.fy = null;
-            // })
-        );
+        .data(force.nodes()).enter();
 
+    node.append('circle')        
+        .attr('class', 'node place')
+        .attr('r', 50)
+        .filter((d) => d.type !== "place").remove();
+    
+    node.append('rect')
+        .attr('class', 'node transition')
+        .attr("width", 200)
+        .attr("height", 40)
+        .filter((d) => d.type !== "transition").remove();
 
+    var drag_handler = d3.drag()
+        .on("start", (event, d) => {
+            if (!event.active) force.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        })
+        .on("drag", (event, d) => {
+            d.fx = event.x;
+            d.fy = event.y;
+        })
+    // .on("end", (event, d) => {
+    //     if (!event.active) force.alphaTarget(0);
+    //     d.fx = null;
+    //     d.fy = null;
+    // })
+    svg.selectAll('.node')
+        .call(drag_handler);
+        
+    
+    var rectangles = svg.selectAll('.transition');
+    var circles = svg.selectAll('.place');
+    
     function tick(e) {
-        node.attr('cx', function (d) { return d.x; })
-            .attr('cy', function (d) { return d.y; });
+        circles.attr('cx', d => d.x)
+               .attr('cy', d => d.y);
 
-        link.attr('x1', function (d) { return d.source.x; })
-            .attr('y1', function (d) { return d.source.y; })
-            .attr('x2', function (d) { return d.target.x; })
-            .attr('y2', function (d) { return d.target.y; });
+        rectangles
+            .attr('x', d => d.x)
+            .attr('y', d => d.y);
+        
+        link.attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y);
     }
 };

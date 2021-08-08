@@ -51,23 +51,35 @@ else
         {
             var start_node = new { id = PetriNet.StartPlace.Id };
             var end_node = new { id = PetriNet.EndPlace.Id };
-            var nodes = PetriNet.Places.Select(p => new { id = p.Id}).ToList();
 
+            var nodes = new List<object>() ;
+            nodes.AddRange(
+                PetriNet.Places.Select(p => new { id = p.Id, type = "place" }).ToList()
+                );
+            nodes.AddRange(
+                PetriNet.Transitions.Select(t => new { id = t.Activity, type = "transition" }).ToList()
+                );
+            
             var links = new List<Link>();
-            foreach (var transition in PetriNet.Transitions)
+            foreach (ITransition transition in PetriNet.Transitions)
             {
-                foreach (var input in transition.InputPlaces)
+                foreach (IPlace inputPlace in transition.InputPlaces)
                 {
-                    foreach (var output in transition.OutputPlaces)
+                    links.Add(new Link
                     {
-                        links.Add(new Link
-                        {
-                            source = input.Id, 
-                            target = output.Id,
-                            activity = transition.Activity,
-                            invisible = transition.Invisible
-                        });
-                    }
+                        source = inputPlace.Id,
+                        target = transition.Activity,
+                        invisible = transition.Invisible
+                    });
+                }
+                foreach (IPlace outputPlace in transition.OutputPlaces)
+                {
+                    links.Add(new Link
+                    {
+                        source = transition.Activity,
+                        target = outputPlace.Id,
+                        invisible = transition.Invisible
+                    });
                 }
             }
 
