@@ -1,0 +1,79 @@
+﻿
+@page "/Models/Uploaded"
+@using ProcessM.NET.Import
+@using System.IO
+@inject Storage Storage
+@inject NavigationManager NavManager
+<h3>Uploaded models</h3>
+<MudSimpleTable Elevation="0" Hover="true">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Size</th>
+            <th>Modified</th>
+            <th>Show</th>
+            <th>Delete</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var netFile in Storage.GetAll())
+        {
+            <tr>
+                <td>
+                    <MudText Typo="Typo.subtitle2">@netFile.Name</MudText>
+                </td>
+                <td>
+                    <MudText Typo="Typo.subtitle2">@netFile.Size</MudText>
+                </td>
+                <td>
+                    <MudText Typo="Typo.subtitle2">@netFile.Modified</MudText>
+                </td>
+                <td>
+                    <MudButton StartIcon="@Icons.Material.Outlined.PlayArrow" IconColor="Color.Success" OnClick='() => NavManager.NavigateTo("DisplayGraph/" + netFile.Name)'/>
+                </td>
+                <td>
+                    <MudButton StartIcon="@Icons.Material.Outlined.Delete" IconColor="Color.Error" OnClick="() => Storage.RemovePetriNetFile(netFile.Name)"/>
+                </td>
+            </tr>
+        }
+    </tbody>
+</MudSimpleTable>
+
+<br/>
+<InputFile id="fileInput" OnChange="UploadFile" hidden multiple />
+
+<MudButton HtmlTag="label"
+           Variant="Variant.Filled"
+           Color="Color.Primary"
+           StartIcon="@Icons.Material.Outlined.FileUpload"
+           for="fileInput">
+    Import File - Petri Net Markup Language
+</MudButton>
+
+@code {
+
+    private async void UploadFile(InputFileChangeEventArgs e)
+    {
+        foreach (var file in e.GetMultipleFiles())
+        {
+
+            long maxFileSize = 1024 * 1024 * 40;//40MB
+            var data = file.OpenReadStream(maxFileSize);
+            await using var memoryString = new MemoryStream();
+            await data.CopyToAsync(memoryString);
+            memoryString.Seek(0, SeekOrigin.Begin);
+            // StreamReader reader = new StreamReader(memoryString);
+            // Console.WriteLine(await reader.ReadToEndAsync());
+            // memoryString.Seek(0, SeekOrigin.Begin);
+            var netFile = new PetriNetFile()
+            {
+                Name = file.Name,
+                Modified = file.LastModified,
+                Size = file.Size,
+                PetriNet = PNMLImport.Deserialize(memoryString)
+            };
+            Storage.AddPetriNetFile(netFile);
+        }
+        StateHasChanged();
+    }
+}

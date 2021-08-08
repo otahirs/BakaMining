@@ -1,0 +1,26 @@
+﻿@page "/DisplayGraph/{Filename}"
+@using ProcessM.NET.Model
+@inject Storage Storage
+<h3>DisplayGraph</h3>
+@if (_petriNet == null)
+{
+    <p>loading</p>
+}
+else
+{
+    <Graph PetriNet="_petriNet" />
+}
+
+
+@code {
+    [Parameter]
+    public string Filename { get; set; }
+    
+    private IPetriNet _petriNet { get; set; }
+    
+    protected override void OnInitialized()
+    {
+        _petriNet = Storage.Get(Filename).PetriNet;
+    }
+
+}

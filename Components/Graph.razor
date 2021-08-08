@@ -1,0 +1,79 @@
+﻿@using ProcessM.NET.Model
+@inject IJSRuntime JS
+<style>
+    .node {
+        fill: #ccc;
+        stroke: #fff;
+        stroke-width: 2px;
+    }
+   
+    .link {
+        stroke: #777;
+        stroke-width: 2px;
+    }
+   
+    .svg-container {
+        height: 100vh;
+        width: 100%;
+    }
+</style>
+@if (PetriNet == null)
+{
+    <MudText>No input data</MudText>
+}
+else 
+{
+    <div @ref="_graph"></div>
+}
+
+
+
+
+@code {
+    private ElementReference _graph;
+    
+    [Parameter]
+    public IPetriNet PetriNet { get; set; }
+
+    class Link
+    {
+        public string source { get; set; }
+        public string target { get; set; }
+        public string activity { get; set; }
+        public bool invisible { get; set; }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (PetriNet == null)
+            return;
+        if (firstRender)
+        {
+            var start_node = new { id = PetriNet.StartPlace.Id };
+            var end_node = new { id = PetriNet.EndPlace.Id };
+            var nodes = PetriNet.Places.Select(p => new { id = p.Id}).ToList();
+
+            var links = new List<Link>();
+            foreach (var transition in PetriNet.Transitions)
+            {
+                foreach (var input in transition.InputPlaces)
+                {
+                    foreach (var output in transition.OutputPlaces)
+                    {
+                        links.Add(new Link
+                        {
+                            source = input.Id, 
+                            target = output.Id,
+                            activity = transition.Activity,
+                            invisible = transition.Invisible
+                        });
+                    }
+                }
+            }
+
+            await JS.InvokeVoidAsync(
+                "DrawGraph", _graph, nodes, links, start_node, end_node);
+        }
+    }
+
+}
