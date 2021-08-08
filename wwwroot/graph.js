@@ -32,14 +32,28 @@ window.DrawGraph = (element, nodes, links, start_node, end_node) => {
         .attr('fill', '#999')
         .style('stroke', 'none');
 
+    var drag_handler = d3.drag()
+        .on("start", (event, d) => {
+            if (!event.active) force.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        })
+        .on("drag", (event, d) => {
+            d.fx = event.x;
+            d.fy = event.y;
+        })
+    // .on("end", (event, d) => {
+    //     if (!event.active) force.alphaTarget(0);
+    //     d.fx = null;
+    //     d.fy = null;
+    // })
 
     var force = d3.forceSimulation(nodes)
         .force('charge', null)//d3.forceManyBody())
         .force('center', null) //d3.forceCenter(width / 2, height / 2))
         .force('collision', d3.forceCollide().radius(150))
         .force('link', d3.forceLink().links(links)
-            .distance(100)
-            .id( (d) => d.id )
+            .id( d => d.id )
         )
         .force('y', d3.forceY(function(d){
             if (d.id === start_node.id)
@@ -66,48 +80,32 @@ window.DrawGraph = (element, nodes, links, start_node, end_node) => {
 
     // add nodes
     var node = svg.selectAll('.node')
-        .data(force.nodes()).enter();
+        .data(force.nodes())
+        .enter()
+        .append("g")
+        .attr("class", "node")
+        .call(drag_handler);
 
-    node.append('circle')        
-        .attr('class', 'node place')
-        .attr('r', 50)
-        .filter((d) => d.type !== "place").remove();
+    node.filter(d => d.type === "place")
+        .append('circle')        
+        .attr('class', 'place')
+        .attr('r', 50);
     
-    node.append('rect')
-        .attr('class', 'node transition')
+    node.filter(d => d.type === "transition")
+        .append('rect')
+        .attr('class', 'transition')
         .attr("width", 200)
         .attr("height", 40)
-        .filter((d) => d.type !== "transition").remove();
-
-    var drag_handler = d3.drag()
-        .on("start", (event, d) => {
-            if (!event.active) force.alphaTarget(0.3).restart();
-            d.fx = d.x;
-            d.fy = d.y;
-        })
-        .on("drag", (event, d) => {
-            d.fx = event.x;
-            d.fy = event.y;
-        })
-    // .on("end", (event, d) => {
-    //     if (!event.active) force.alphaTarget(0);
-    //     d.fx = null;
-    //     d.fy = null;
-    // })
-    svg.selectAll('.node')
-        .call(drag_handler);
-        
+        .attr("x", d => -200/2)
+        .attr("y", d => -40/2 );
     
-    var rectangles = svg.selectAll('.transition');
-    var circles = svg.selectAll('.place');
+    node.append('text')
+        .attr("text-anchor", "middle")
+        .text(d => d.id);
+    
     
     function tick(e) {
-        circles.attr('cx', d => d.x)
-               .attr('cy', d => d.y);
-
-        rectangles
-            .attr('x', d => d.x)
-            .attr('y', d => d.y);
+        node.attr("transform", d => `translate(${d.x},${d.y})`);
         
         link.attr('x1', d => d.source.x)
             .attr('y1', d => d.source.y)
