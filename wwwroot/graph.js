@@ -5,8 +5,8 @@
 
 window.DrawGraph = (element, nodes, links, start_node, end_node) => {
 
-    const height = 1500;
-    const width = 700;
+    const height = 800;
+    const width = 2000;
 
     var svg = d3.select(element).append('svg')
         .classed("svg-container", true)
@@ -63,25 +63,29 @@ window.DrawGraph = (element, nodes, links, start_node, end_node) => {
     // })
 
     var force = d3.forceSimulation(nodes)
-        .force('charge', null)//d3.forceManyBody())
+        .force('charge', d3.forceManyBody())
         .force('center', null) //d3.forceCenter(width / 2, height / 2))
         .force('collision', d3.forceCollide().radius(150))
         .force('link', d3.forceLink().links(links)
             .id( d => d.id )
         )
-        .force('y', d3.forceY(function(d){
+        .force('x', d3.forceX(function(d){
             if (d.id === start_node.id)
                 return 0;
             if (d.id === end_node.id)
-                return height;
-            return height/2;
+                return width;
+            return width/2;
         }).strength(function(d){
             if (d.id === start_node.id || d.id === end_node.id)
                 return 0.8;
             return 0.1;
         }))
-        .force('x', d3.forceX(function(d){
-             return width/2;
+        .force('y', d3.forceY(function(d){
+             return height/2;
+        }).strength(function(d){
+            if (d.id === start_node.id || d.id === end_node.id)
+                return 0.8;
+            return 0.1;
         }))
         .on('tick', tick);
 
@@ -110,8 +114,8 @@ window.DrawGraph = (element, nodes, links, start_node, end_node) => {
         .attr('class', 'place')
         .attr('r', 50);
     
-    const trans_width = 200;
-    const trans_height = 40;
+    const trans_width = 40;
+    const trans_height = 150;
     node.filter(d => d.type === "transition")
         .append('rect')
         .attr('class', 'transition')
