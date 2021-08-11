@@ -1,6 +1,6 @@
 ﻿@page "/DisplayGraph/{Filename}"
 @using ProcessM.NET.Model
-@inject Storage Storage
+@inject Services.Storage Storage
 <h3>DisplayGraph</h3>
 @if (_petriNet == null)
 {
@@ -20,7 +20,7 @@ else
     
     protected override void OnInitialized()
     {
-        _petriNet = Storage.Get(Filename).PetriNet;
+        _petriNet = Storage.GetPetriNet(Filename).PetriNet;
     }
 
 }
