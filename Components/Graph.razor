@@ -1,4 +1,6 @@
 ﻿@using ProcessM.NET.Model
+@using ProcessM.NET.Export
+@using ProcessM.NET.Model.BasicPetriNet
 @inject IJSRuntime JS
 <style>
     .node {
@@ -21,12 +23,7 @@
 {
     <MudText>No input data</MudText>
 }
-else 
-{
-    <div @ref="_graph"></div>
-}
-
-
+<div @ref="_graph"></div>
 
 
 @code {
@@ -35,56 +32,38 @@ else
     [Parameter]
     public IPetriNet PetriNet { get; set; }
 
-    class Link
-    {
-        public string source { get; set; }
-        public string target { get; set; }
-        public bool invisible { get; set; }
-    }
+    bool _graphInitiated = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (PetriNet == null)
-            return;
-        if (firstRender)
+        if (!_graphInitiated)
         {
-            var start_node = new { id = PetriNet.StartPlace.Id };
-            var end_node = new { id = PetriNet.EndPlace.Id };
-
-            var nodes = new List<object>() ;
-            nodes.AddRange(
-                PetriNet.Places.Select(p => new { id = p.Id, type = "place" }).ToList()
-                );
-            nodes.AddRange(
-                PetriNet.Transitions.Select(t => new { id = t.Activity, type = "transition" }).ToList()
-                );
-            
-            var links = new List<Link>();
-            foreach (ITransition transition in PetriNet.Transitions)
-            {
-                foreach (IPlace inputPlace in transition.InputPlaces)
-                {
-                    links.Add(new Link
-                    {
-                        source = inputPlace.Id,
-                        target = transition.Activity,
-                        invisible = transition.Invisible
-                    });
-                }
-                foreach (IPlace outputPlace in transition.OutputPlaces)
-                {
-                    links.Add(new Link
-                    {
-                        source = transition.Activity,
-                        target = outputPlace.Id,
-                        invisible = transition.Invisible
-                    });
-                }
-            }
-
-            await JS.InvokeVoidAsync(
-                "DrawGraph", _graph, nodes, links, start_node, end_node);
+            await InitGraph();
         }
+    }
+
+    public async Task UpdateGraph(PetriNet updatedPetriNet)
+    {
+        PetriNet = updatedPetriNet;
+        var dotString = DOTExport.Serialize(PetriNet);
+        if (!_graphInitiated)
+        {
+            await InitGraph(dotString);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("UpdateGraph", dotString);
+        }
+        StateHasChanged();
+    }
+
+    private async Task InitGraph(string dotString = "")
+    {
+        if (PetriNet != null && string.IsNullOrEmpty(dotString))
+            dotString = DOTExport.Serialize(PetriNet);
+        
+        await JS.InvokeVoidAsync("DrawGraph", _graph, dotString);
+        _graphInitiated = true;
     }
 
 }
