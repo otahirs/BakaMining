@@ -5,9 +5,7 @@ namespace BakaMining.Models
 {
     public class PetriNetFile
     {
-        public string Name { get; set; }
-        public long Size { get; set; }
-        public DateTimeOffset Modified { get; set; }
+        public FileMetadata Metadata { get; set; }
         public IPetriNet PetriNet { get; set; }
     }
 }

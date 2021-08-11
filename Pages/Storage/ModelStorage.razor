@@ -1,5 +1,5 @@
 ﻿
-@page "/Models/Uploaded"
+@page "/Storage/Models"
 @using ProcessM.NET.Import
 @using System.IO
 @inject Storage Storage
@@ -16,23 +16,23 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var netFile in Storage.GetAll())
+        @foreach (var netFile in Storage.GetAllNets())
         {
             <tr>
                 <td>
-                    <MudText Typo="Typo.subtitle2">@netFile.Name</MudText>
+                    <MudText Typo="Typo.subtitle2">@netFile.Metadata.Name</MudText>
                 </td>
                 <td>
-                    <MudText Typo="Typo.subtitle2">@netFile.Size</MudText>
+                    <MudText Typo="Typo.subtitle2">@netFile.Metadata.Size</MudText>
                 </td>
                 <td>
-                    <MudText Typo="Typo.subtitle2">@netFile.Modified</MudText>
+                    <MudText Typo="Typo.subtitle2">@netFile.Metadata.Modified</MudText>
                 </td>
                 <td>
-                    <MudButton StartIcon="@Icons.Material.Outlined.PlayArrow" IconColor="Color.Success" OnClick='() => NavManager.NavigateTo("DisplayGraph/" + netFile.Name)'/>
+                    <MudButton StartIcon="@Icons.Material.Outlined.PlayArrow" IconColor="Color.Success" OnClick='() => NavManager.NavigateTo("DisplayGraph/" + netFile.Metadata.Name)'/>
                 </td>
                 <td>
-                    <MudButton StartIcon="@Icons.Material.Outlined.Delete" IconColor="Color.Error" OnClick="() => Storage.RemovePetriNetFile(netFile.Name)"/>
+                    <MudButton StartIcon="@Icons.Material.Outlined.Delete" IconColor="Color.Error" OnClick="() => Storage.RemovePetriNetFile(netFile.Metadata.Name)"/>
                 </td>
             </tr>
         }
@@ -67,9 +67,12 @@
             // memoryString.Seek(0, SeekOrigin.Begin);
             var netFile = new PetriNetFile()
             {
-                Name = file.Name,
-                Modified = file.LastModified,
-                Size = file.Size,
+                Metadata = new FileMetadata()
+                {
+                    Name = file.Name,
+                    Modified = file.LastModified,
+                    Size = file.Size
+                },
                 PetriNet = PNMLImport.Deserialize(memoryString)
             };
             Storage.AddPetriNetFile(netFile);
