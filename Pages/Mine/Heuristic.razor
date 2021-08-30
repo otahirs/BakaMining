@@ -1,10 +1,9 @@
 ﻿@page "/Mine/Heuristic/"
 @page "/Mine/Heuristic/{Filename}"
-@inject Services.Storage Storage
+@inject Services.Storage.EventLogStore EventLogStore
 @using ProcessM.NET.Discovery.HeuristicMiner
-@using ProcessM.NET.Model
 @using ProcessM.NET.Model.DataAnalysis
-
+    
 <MudGrid>
     <MudItem xs="12">
         <MudText Typo="Typo.h3">Heuristic Miner</MudText>
@@ -51,13 +50,13 @@
     private Graph _graph { get; set; } = new();
     private WorkflowLog _log { get; set; }
     private HeuristicMinerSettings _minerSettings = new();
-    private bool _firstRender = true;
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            _log = Storage.GetEventLog(Filename).EventLog;
+            var logFile = await EventLogStore.Get(Filename);
+            _log = logFile.EventLog;
             await UpdateGraph();
         }
     }

@@ -2,7 +2,8 @@
 @page "/Storage/Models"
 @using ProcessM.NET.Import
 @using System.IO
-@inject Storage Storage
+@using ProcessM.NET.Model.BasicPetriNet
+@inject Services.Storage.PetriNetStore PetriNetStore
 @inject NavigationManager NavManager
 <h3>Uploaded models</h3>
 <MudSimpleTable Elevation="0" Hover="true">
@@ -16,7 +17,7 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var netFile in Storage.GetAllNets())
+        @foreach (var netFile in _netFiles)
         {
             <tr>
                 <td>
@@ -29,10 +30,10 @@
                     <MudText Typo="Typo.subtitle2">@netFile.Metadata.Modified</MudText>
                 </td>
                 <td>
-                    <MudButton StartIcon="@Icons.Material.Outlined.PlayArrow" IconColor="Color.Success" OnClick='() => NavManager.NavigateTo("DisplayGraph/" + netFile.Metadata.Name)'/>
+                    <MudFab Icon="@Icons.Material.Outlined.PlayArrow" Color="Color.Primary" OnClick='() => NavManager.NavigateTo("DisplayGraph/" + netFile.Metadata.Name)'/>
                 </td>
                 <td>
-                    <MudButton StartIcon="@Icons.Material.Outlined.Delete" IconColor="Color.Error" OnClick="() => Storage.RemovePetriNetFile(netFile.Metadata.Name)"/>
+                    <MudFab Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="async () => await PetriNetStore.Remove(netFile.Metadata.Name)"/>
                 </td>
             </tr>
         }
@@ -52,6 +53,11 @@
 
 @code {
 
+    private List<PetriNetFile> _netFiles = new();
+    protected override async Task OnInitializedAsync()
+    {
+        _netFiles = await PetriNetStore.GetAll();
+    }
     private async void UploadFile(InputFileChangeEventArgs e)
     {
         foreach (var file in e.GetMultipleFiles())
@@ -73,9 +79,10 @@
                     Modified = file.LastModified,
                     Size = file.Size
                 },
-                PetriNet = PNMLImport.Deserialize(memoryString)
+                PetriNet = PNMLImport.Deserialize(memoryString) as PetriNet
             };
-            Storage.AddPetriNetFile(netFile);
+            await PetriNetStore.Add(netFile);
+            _netFiles.Add(netFile);
         }
         StateHasChanged();
     }

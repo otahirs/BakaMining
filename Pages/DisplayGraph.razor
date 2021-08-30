@@ -1,6 +1,6 @@
 ﻿@page "/DisplayGraph/{Filename}"
-@using ProcessM.NET.Model
-@inject Services.Storage Storage
+@using ProcessM.NET.Model.BasicPetriNet
+@inject Services.Storage.PetriNetStore PetriNetStore
 <h3>DisplayGraph</h3>
 @if (_petriNet == null)
 {
@@ -8,19 +8,22 @@
 }
 else
 {
-    <Graph PetriNet="_petriNet" />
+    <MudPaper Elevation="0" Style="background-color: white">
+        <Graph PetriNet="_petriNet" />
+    </MudPaper>
 }
 
 
 @code {
     [Parameter]
     public string Filename { get; set; }
-    
-    private IPetriNet _petriNet { get; set; }
-    
-    protected override void OnInitialized()
+
+    private PetriNet _petriNet { get; set; }
+
+    protected override async Task OnInitializedAsync()
     {
-        _petriNet = Storage.GetPetriNet(Filename).PetriNet;
+        var netFile = await PetriNetStore.Get(Filename);
+        _petriNet = netFile.PetriNet;
     }
 
 }

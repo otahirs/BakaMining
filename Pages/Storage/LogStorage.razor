@@ -2,7 +2,7 @@
 @using ProcessM.NET.Import
 @using System.IO
 @using ProcessM.NET.Model.DataAnalysis
-@inject Storage Storage
+@inject Services.Storage.EventLogStore EventLogStore
 @inject NavigationManager NavManager
 
 <h3>Log Storage</h3>
@@ -17,7 +17,7 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var logFile in Storage.GetAllLogs())
+        @foreach (var logFile in _logs)
         {
             <tr>
                 <td>
@@ -30,10 +30,10 @@
                     <MudText Typo="Typo.subtitle2">@logFile.Metadata.Modified</MudText>
                 </td>
                 <td>
-                    <MudButton StartIcon="@Icons.Material.Outlined.PrecisionManufacturing" IconColor="Color.Success" OnClick='() => NavManager.NavigateTo("/Mine/Heuristic/" + logFile.Metadata.Name)'/>
+                    <MudFab Icon="@Icons.Material.Outlined.PrecisionManufacturing" Color="Color.Primary" OnClick='() => NavManager.NavigateTo("/Mine/Heuristic/" + logFile.Metadata.Name)'/>
                 </td>
                 <td>
-                    <MudButton StartIcon="@Icons.Material.Outlined.Delete" IconColor="Color.Error" OnClick="() => Storage.RemoveLogFile(logFile.Metadata.Name)"/>
+                    <MudFab Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="async () => await EventLogStore.Remove(logFile.Metadata.Name)"/>
                 </td>
             </tr>
         }
@@ -52,6 +52,12 @@
 </MudButton>
 
 @code {
+    private List<EventLogFile> _logs = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _logs = await EventLogStore.GetAll();
+    }
 
     private async void UploadFile(InputFileChangeEventArgs e)
     {
@@ -80,7 +86,8 @@
                 },
                 EventLog = new WorkflowLog(importedLog)
             };
-            Storage.AddEventLogFile(logFile);
+            await EventLogStore.Add(logFile);
+            _logs.Add(logFile);
         }
         StateHasChanged();
     }
