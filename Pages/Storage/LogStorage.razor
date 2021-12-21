@@ -1,11 +1,12 @@
 ﻿@page "/Storage/Logs"
-@using ProcessM.NET.Import
-@using System.IO
-@using ProcessM.NET.Model.DataAnalysis
 @inject Services.Storage.EventLogStore EventLogStore
 @inject NavigationManager NavManager
+@inject IDialogService DialogService
 
 <h3>Log Storage</h3>
+<MudButton OnClick="OpenDialog" Variant="Variant.Filled" Color="Color.Primary">
+    Import file - CSV
+</MudButton>
 <MudSimpleTable Elevation="0" Hover="true">
     <thead>
         <tr>
@@ -33,62 +34,35 @@
                     <MudFab Icon="@Icons.Material.Outlined.PrecisionManufacturing" Color="Color.Primary" OnClick='() => NavManager.NavigateTo("/Mine/Heuristic/" + logFile.Metadata.Name)'/>
                 </td>
                 <td>
-                    <MudFab Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="async () => await EventLogStore.Remove(logFile.Metadata.Name)"/>
+                    <MudFab Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="() => RemoveLog(logFile.Metadata.Name)"/>
                 </td>
             </tr>
         }
     </tbody>
 </MudSimpleTable>
 
-<br/>
-<InputFile id="fileInput" OnChange="UploadFile" hidden multiple />
-
-<MudButton HtmlTag="label"
-           Variant="Variant.Filled"
-           Color="Color.Primary"
-           StartIcon="@Icons.Material.Outlined.FileUpload"
-           for="fileInput">
-    Import File - CSV
-</MudButton>
-
 @code {
     private List<EventLogFile> _logs = new();
 
     protected override async Task OnInitializedAsync()
     {
-        _logs = await EventLogStore.GetAll();
+        await LoadLogs();
     }
 
-    private async void UploadFile(InputFileChangeEventArgs e)
+    private async Task LoadLogs()
     {
-        foreach (var file in e.GetMultipleFiles())
-        {
+        _logs = await EventLogStore.GetAll();
+    }
+    
+    private async Task OpenDialog()
+    {
+        await DialogService.Show<DialogLogUplaod>("Import file - CSV").Result;
+        await LoadLogs();
+    }
 
-            long maxFileSize = 1024 * 1024 * 40;//40MB
-            var data = file.OpenReadStream(maxFileSize);
-            await using var memoryString = new MemoryStream();
-            await data.CopyToAsync(memoryString);
-            memoryString.Seek(0, SeekOrigin.Begin);
-            // StreamReader reader = new StreamReader(memoryString);
-            // Console.WriteLine(await reader.ReadToEndAsync());
-            // memoryString.Seek(0, SeekOrigin.Begin);
-            var importedLog = CSVImport.MakeDataFrame(memoryString);
-            importedLog.SetActivity("act");
-            importedLog.SetCaseId("id");
-                
-            var logFile = new EventLogFile()
-            {
-                Metadata = new FileMetadata()
-                {
-                    Name = file.Name,
-                    Modified = file.LastModified,
-                    Size = file.Size
-                },
-                EventLog = new WorkflowLog(importedLog)
-            };
-            await EventLogStore.Add(logFile);
-            _logs.Add(logFile);
-        }
-        StateHasChanged();
+    private async Task RemoveLog(string logFileName)
+    {
+        await EventLogStore.Remove(logFileName);
+        await LoadLogs();
     }
 }
