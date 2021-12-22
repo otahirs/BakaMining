@@ -1,19 +1,20 @@
 ﻿@page "/Storage/Logs"
+@using BakaMining.Utils
 @inject Services.Storage.EventLogStore EventLogStore
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 
-<h3>Log Storage</h3>
-<MudButton OnClick="OpenDialog" Variant="Variant.Filled" Color="Color.Primary">
+<h2>Logs</h2>
+<MudButton OnClick="OpenDialog" StartIcon="@Icons.Material.Outlined.FileUpload" Variant="Variant.Filled" Color="Color.Primary" Class="my-4">
     Import file - CSV
 </MudButton>
 <MudSimpleTable Elevation="0" Hover="true">
     <thead>
         <tr>
             <th>Name</th>
+            <th>Mine</th>
             <th>Size</th>
             <th>Modified</th>
-            <th>Mine</th>
             <th>Delete</th>
         </tr>
     </thead>
@@ -25,16 +26,16 @@
                     <MudText Typo="Typo.subtitle2">@logFile.Metadata.Name</MudText>
                 </td>
                 <td>
-                    <MudText Typo="Typo.subtitle2">@logFile.Metadata.Size</MudText>
+                    <MudFab Icon="@Icons.Material.Outlined.PrecisionManufacturing" Size="Size.Small" Color="Color.Primary" OnClick='() => NavManager.NavigateTo("/Mine/" + logFile.Metadata.Name)'/>
                 </td>
                 <td>
-                    <MudText Typo="Typo.subtitle2">@logFile.Metadata.Modified</MudText>
+                    <MudText Typo="Typo.subtitle2">@Utils.GetBytesReadable(logFile.Metadata.Size)</MudText>
                 </td>
                 <td>
-                    <MudFab Icon="@Icons.Material.Outlined.PrecisionManufacturing" Color="Color.Primary" OnClick='() => NavManager.NavigateTo("/Mine/Heuristic/" + logFile.Metadata.Name)'/>
+                    <MudText Typo="Typo.subtitle2">@Utils.GetDateReadable(logFile.Metadata.Modified)</MudText>
                 </td>
                 <td>
-                    <MudFab Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" OnClick="() => RemoveLog(logFile.Metadata.Name)"/>
+                    <MudFab Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error" OnClick="() => RemoveLog(logFile.Metadata.Name)"/>
                 </td>
             </tr>
         }
