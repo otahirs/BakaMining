@@ -1,0 +1,3 @@
+[submodule "ProcessM.NET"]
+	path = ProcessM.NET
+	url = git@github.com:otahirs/ProcessM.NET.git

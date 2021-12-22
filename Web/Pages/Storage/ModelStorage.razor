@@ -89,7 +89,7 @@
                     Modified = file.LastModified,
                     Size = file.Size
                 },
-                PetriNet = PNMLImport.Deserialize(memoryString.ToString()) as PetriNet
+                PetriNet = PNMLImport.Deserialize(memoryString) as PetriNet
             };
             await PetriNetStore.Add(netFile);
             _netFiles.Add(netFile);
