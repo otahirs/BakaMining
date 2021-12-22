@@ -1,6 +1,7 @@
 ﻿@using ProcessM.NET.Model
 @using ProcessM.NET.Export
 @using ProcessM.NET.Model.BasicPetriNet
+@using System.Threading
 @inject IJSRuntime JS
 <style>
     .node {
@@ -15,11 +16,10 @@
     }
        
     .svg-container {
-        height: 100vh;
         width: 100%;
     }
 </style>
-@if (PetriNet == null)
+@if (_petriNet == null)
 {
     <MudText>No input data</MudText>
 }
@@ -28,42 +28,34 @@
 
 @code {
     private ElementReference _graph;
-    
-    [Parameter]
-    public IPetriNet PetriNet { get; set; }
+
+    private IPetriNet _petriNet;
 
     bool _graphInitiated = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_graphInitiated)
+        if (firstRender)
         {
-            await InitGraph();
+            await JS.InvokeVoidAsync("InitGraph", _graph);
+            _graphInitiated = true;
+            if (_petriNet != null)
+            {
+                await RenderGraph(_petriNet);
+            }
         }
     }
 
-    public async Task UpdateGraph(PetriNet updatedPetriNet)
+    public async Task RenderGraph(IPetriNet updatedPetriNet)
     {
-        PetriNet = updatedPetriNet;
-        var dotString = DOTExport.Serialize(PetriNet);
+        _petriNet = updatedPetriNet;
         if (!_graphInitiated)
         {
-            await InitGraph(dotString);
+            return;
         }
-        else
-        {
-            await JS.InvokeVoidAsync("UpdateGraph", dotString);
-        }
+        var dotString = DOTExport.Serialize(_petriNet);
+        await JS.InvokeVoidAsync("RenderGraph", dotString);
         StateHasChanged();
-    }
-
-    private async Task InitGraph(string dotString = "")
-    {
-        if (PetriNet != null && string.IsNullOrEmpty(dotString))
-            dotString = DOTExport.Serialize(PetriNet);
-        
-        await JS.InvokeVoidAsync("DrawGraph", _graph, dotString);
-        _graphInitiated = true;
     }
 
 }

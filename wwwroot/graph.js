@@ -1,10 +1,10 @@
 ﻿
 
-window.UpdateGraph = (dotString) => {
+window.RenderGraph = (dotString) => {
     window.graphviz.renderDot(dotString);
 }
 
-window.DrawGraph = (element, dotString) => {
+window.InitGraph = (element) => {
     
     var graph = d3.select(element);
     
@@ -14,8 +14,7 @@ window.DrawGraph = (element, dotString) => {
             return d3.transition("main")
                 .ease(d3.easeLinear)
                 .duration(750);
-        })
-        .renderDot(dotString);
+        });
 
     window.addEventListener('resize', () =>
     {

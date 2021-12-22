@@ -1,0 +1,152 @@
+﻿@page "/Mine"
+@page "/Mine/{Filename}"
+@inject Services.Storage.EventLogStore EventLogStore
+@inject Services.Storage.PetriNetStore PetriNetStore
+@using ProcessM.NET.Discovery.HeuristicMiner
+@using ProcessM.NET.Discovery.Alpha
+@using ProcessM.NET.Export
+@using ProcessM.NET.Model.BasicPetriNet
+@using ProcessM.NET.Model.DataAnalysis
+@using Blazor.DownloadFileFast.Interfaces
+@using BakaMining.Pages.Storage
+@inject IBlazorDownloadFileService DownloadFileService
+
+@if (string.IsNullOrEmpty(Filename))
+{
+    <MudAlert Severity="Severity.Info">Go to <MudLink Href="/Storage/Logs">Logs</MudLink> to select a file to mine.</MudAlert>
+    return;
+}
+<MudGrid>
+    <MudItem xs="12">
+        
+    </MudItem>
+    <MudItem xs="10" Style="background-color: white">
+        <MudPaper Elevation="0">
+            <Graph @ref="_graph"/>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="2">
+        <MudCard Elevation="3">
+            <MudCardContent>
+                <EditForm Model="@_minerSettings" OnValidSubmit="OnValidSubmit">
+                    <DataAnnotationsValidator/>
+                    <MudText Typo="Typo.h3">Miner</MudText>
+                    <MudSelect T="Miner" Label="Miner" AnchorOrigin="Origin.BottomCenter" Required="true" @bind-Value=@_selectedMiner Class="mb-4">
+                        @foreach (var m in Enum.GetValues<Miner>())
+                        {
+                            <MudSelectItem Value="@(m)"/>
+                        }
+                    </MudSelect>
+                    @switch (_selectedMiner)
+                    {
+                        case Miner.Alpha:
+                            break;
+                        case Miner.Heuristic:
+                            <MudNumericField T="double" Label="Dependency Threshold" HelperText=""
+                                             @bind-Value="_minerSettings.DependencyThreshold" For="@(() => _minerSettings.DependencyThreshold)"/>
+                            <MudNumericField T="double" Label="L1L Threshold" HelperText="" Class="mt-3"
+                                             @bind-Value="_minerSettings.L1LThreshold" For="@(() => _minerSettings.L1LThreshold)"/>
+                            <MudNumericField T="double" Label="L2L Threshold" HelperText="" Class="mt-3"
+                                             @bind-Value="_minerSettings.L2LThreshold" For="@(() => _minerSettings.L2LThreshold)"/>
+                            <MudNumericField T="double" Label="Relative To Best Threshold" HelperText="" Class="mt-3"
+                                             @bind-Value="_minerSettings.RelativeToBestThreshold" For="@(() => _minerSettings.RelativeToBestThreshold)"/>
+                            <MudSwitch Color="Color.Primary" Label="All Tasks Connected" Class="mt-3"
+                                       @bind-Checked="_minerSettings.AllTasksConnected" For="@(() => _minerSettings.AllTasksConnected)"/>
+                            <br/>
+                            <MudSwitch Color="Color.Primary" Label="Use Long Distance" HelperText="" Class="mt-3"
+                                       @bind-Checked="_minerSettings.UseLongDistance" For="@(() => _minerSettings.UseLongDistance)"/>
+                            <MudNumericField T="double" Label="Long Distance Threshold" HelperText="" Class="mt-3" Disabled="!_minerSettings.UseLongDistance"
+                                             @bind-Value="_minerSettings.LongDistanceThreshold" For="@(() => _minerSettings.LongDistanceThreshold)"/>
+                            break;
+                    }
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="mt-2">Mine</MudButton>
+                </EditForm>
+            </MudCardContent>
+        </MudCard>
+        @if (_petriNet != null)
+        {
+            <MudCard Elevation="3" Class="mt-4">
+                <MudCardContent>
+                    <MudButton StartIcon="@Icons.Filled.Save" Variant="Variant.Outlined" Class="mb-2" OnClick="SaveModel">Save to Models</MudButton><br />
+                    <MudButton StartIcon="@Icons.Filled.Download" Variant="Variant.Outlined" OnClick="DownloadPNML">PNML</MudButton>
+                    <MudButton StartIcon="@Icons.Filled.Download" Variant="Variant.Outlined" OnClick="DownloadDOT">DOT</MudButton>
+                </MudCardContent>
+            </MudCard>
+        }
+    </MudItem>
+    
+</MudGrid>
+
+
+@code {
+    [Parameter]
+    public string Filename { get; set; }
+    private Graph _graph { get; set; } = new();
+    private WorkflowLog _log { get; set; }
+    private HeuristicMinerSettings _minerSettings = new();
+    private Miner _selectedMiner = Miner.Heuristic;
+    private PetriNet _petriNet;
+
+    enum Miner
+    {
+        Alpha,
+        Heuristic
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (string.IsNullOrEmpty(Filename))
+            {
+                return;
+            }
+            var logFile = await EventLogStore.Get(Filename);
+            _log = logFile.EventLog;
+            await UpdateGraph();
+        }
+    }
+    
+    private async Task OnValidSubmit()
+    {
+        await UpdateGraph();
+    }
+
+    private async Task UpdateGraph()
+    {
+        _petriNet = _selectedMiner switch {
+            Miner.Heuristic => HeuristicMiner.MinePetriNet(_log, _minerSettings),
+            Miner.Alpha => Alpha.MakePetriNet(new RelationMatrix(_log))
+        }; 
+        await _graph.RenderGraph(_petriNet);
+        StateHasChanged();
+    }
+    
+    private async Task SaveModel()
+    {
+        var petriNetFile = new PetriNetFile
+        {
+            PetriNet = _petriNet,
+            Metadata = new FileMetadata()
+            {
+                Modified = DateTimeOffset.Now,
+                Size =  System.Text.Encoding.UTF8.GetBytes(PNMLExport.Serialize(_petriNet)).Length,
+                Name = Filename.Substring(0, Filename.Length - 4)
+            }
+        };
+        await PetriNetStore.Add(petriNetFile);
+    }
+
+    private async Task DownloadPNML()
+    {
+        var file = System.Text.Encoding.UTF8.GetBytes(PNMLExport.Serialize(_petriNet));
+        await DownloadFileService.DownloadFileAsync(Filename.Substring(0, Filename.Length - 3) + "pnml", file);
+    }
+    
+    private async Task DownloadDOT()
+    {
+        var file = System.Text.Encoding.UTF8.GetBytes(DOTExport.Serialize(_petriNet));
+        await DownloadFileService.DownloadFileAsync(Filename.Substring(0, Filename.Length - 3)  + "dot", file);
+    }
+
+}
