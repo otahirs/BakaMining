@@ -25,6 +25,7 @@ namespace BakaMining
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
             builder.Services.AddMudServices();
+            builder.Services.AddBlazorDownloadFile();
             
             builder.Services.AddIndexedDB(dbStore =>
             {
