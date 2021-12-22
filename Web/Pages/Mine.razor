@@ -84,7 +84,7 @@
     private Graph _graph { get; set; } = new();
     private WorkflowLog _log { get; set; }
     private HeuristicMinerSettings _minerSettings = new();
-    private Miner _selectedMiner = Miner.Heuristic;
+    private Miner _selectedMiner = Miner.Alpha;
     private PetriNet _petriNet;
 
     enum Miner
