@@ -104,6 +104,8 @@
         {
             importedLog.SetTimestamp(form.timestamp);
         }
+        var wfLog = new WorkflowLog(importedLog);
+            
         var logFile = new EventLogFile()
         {
             Metadata = new FileMetadata()
@@ -112,7 +114,11 @@
                 Modified = form.file.LastModified,
                 Size = form.file.Size
             },
-            EventLog = new WorkflowLog(importedLog)
+            EventLog = new WorkflowLog(wfLog.WorkflowTraces
+                .GroupBy(tr => tr.Activities)
+                .OrderByDescending(gr => gr.Count())
+                .SelectMany(gr => gr)
+                .ToList())
         };
         await EventLogStore.Add(logFile);
         MudDialog.Close(DialogResult.Ok(true));

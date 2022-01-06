@@ -59,6 +59,7 @@
                                              @bind-Value="_minerSettings.LongDistanceThreshold" For="@(() => _minerSettings.LongDistanceThreshold)"/>
                             break;
                     }
+                    <MudSlider T="double" Value="_slider" ValueChanged="FilterLog" Min="0" Max="100" Step="0.05">traces: @_tracesVisible / @_tracesMax (dist. @_tracesDistinct)</MudSlider>
                     <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="mt-2">Mine</MudButton>
                 </EditForm>
             </MudCardContent>
@@ -82,10 +83,15 @@
     [Parameter]
     public string Filename { get; set; }
     private Graph _graph { get; set; } = new();
+    private WorkflowLog _source_log { get; set; }
     private WorkflowLog _log { get; set; }
     private HeuristicMinerSettings _minerSettings = new();
     private Miner _selectedMiner = Miner.Alpha;
     private PetriNet _petriNet;
+    private int _tracesMax;
+    private int _tracesVisible;
+    private int _tracesDistinct;
+    private double _slider = 100;
 
     enum Miner
     {
@@ -102,14 +108,25 @@
                 return;
             }
             var logFile = await EventLogStore.Get(Filename);
-            _log = logFile.EventLog;
-            await UpdateGraph();
+            _log = _source_log = logFile.EventLog;
+            _tracesMax = _tracesVisible = _log.WorkflowTraces.Count;
+            UpdateDistinctTracesCount();
+            StateHasChanged();
         }
     }
     
     private async Task OnValidSubmit()
     {
         await UpdateGraph();
+    }
+
+    private void FilterLog(double visiblePercentage)
+    {
+        _slider = visiblePercentage;
+        var tracesCount = Convert.ToInt32(_tracesMax * visiblePercentage / 100) ;
+        _tracesVisible = tracesCount > 0 ? tracesCount : 1;
+        _log = new WorkflowLog(_source_log.WorkflowTraces.Take(_tracesVisible).ToList());
+        UpdateDistinctTracesCount();
     }
 
     private async Task UpdateGraph()
@@ -147,6 +164,21 @@
     {
         var file = System.Text.Encoding.UTF8.GetBytes(DOTExport.Serialize(_petriNet));
         await DownloadFileService.DownloadFileAsync(Filename.Substring(0, Filename.Length - 3)  + "dot", file);
+    }
+
+    private void UpdateDistinctTracesCount()
+    {
+        int count = 0;
+        var lastTrace = new List<string>();
+        foreach (var trace in _log.WorkflowTraces)
+        {
+            if (!trace.Activities.SequenceEqual(lastTrace))
+            {
+                count += 1;
+            }
+            lastTrace = trace.Activities;
+        }
+        _tracesDistinct = count;
     }
 
 }
