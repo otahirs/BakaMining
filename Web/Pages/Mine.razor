@@ -43,13 +43,13 @@
                             break;
                         case Miner.Heuristic:
                             <MudNumericField T="double" Label="Dependency Threshold" HelperText=""
-                                             @bind-Value="_minerSettings.DependencyThreshold" For="@(() => _minerSettings.DependencyThreshold)"/>
+                                             @bind-Value="_minerSettings.DependencyThreshold" For="@(() => _minerSettings.DependencyThreshold)" Step="0.05" Format="N2" />
                             <MudNumericField T="double" Label="L1L Threshold" HelperText="" Class="mt-3"
-                                             @bind-Value="_minerSettings.L1LThreshold" For="@(() => _minerSettings.L1LThreshold)"/>
+                                             @bind-Value="_minerSettings.L1LThreshold" For="@(() => _minerSettings.L1LThreshold)" Step="0.05" Format="N2" />
                             <MudNumericField T="double" Label="L2L Threshold" HelperText="" Class="mt-3"
-                                             @bind-Value="_minerSettings.L2LThreshold" For="@(() => _minerSettings.L2LThreshold)"/>
+                                             @bind-Value="_minerSettings.L2LThreshold" For="@(() => _minerSettings.L2LThreshold)" Step="0.05" Format="N2" />
                             <MudNumericField T="double" Label="Relative To Best Threshold" HelperText="" Class="mt-3"
-                                             @bind-Value="_minerSettings.RelativeToBestThreshold" For="@(() => _minerSettings.RelativeToBestThreshold)"/>
+                                             @bind-Value="_minerSettings.RelativeToBestThreshold" For="@(() => _minerSettings.RelativeToBestThreshold)" Step="0.05" Format="N2" />
                             <MudSwitch Color="Color.Primary" Label="All Tasks Connected" Class="mt-3"
                                        @bind-Checked="_minerSettings.AllTasksConnected" For="@(() => _minerSettings.AllTasksConnected)"/>
                             <br/>
