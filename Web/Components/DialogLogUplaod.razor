@@ -1,4 +1,5 @@
 ﻿@using System.IO
+@using BakaMining.Utils
 @using ProcessM.NET.Import
 @using ProcessM.NET.Model
 @using ProcessM.NET.Model.DataAnalysis
@@ -104,8 +105,8 @@
         {
             importedLog.SetTimestamp(form.timestamp);
         }
-        var wfLog = new WorkflowLog(importedLog);
-            
+        var workflowLog = new WorkflowLog(importedLog);
+
         var logFile = new EventLogFile()
         {
             Metadata = new FileMetadata()
@@ -114,13 +115,19 @@
                 Modified = form.file.LastModified,
                 Size = form.file.Size
             },
-            EventLog = new WorkflowLog(wfLog.WorkflowTraces
-                .GroupBy(tr => tr.Activities)
-                .OrderByDescending(gr => gr.Count())
-                .SelectMany(gr => gr)
-                .ToList())
+            EventLog = OrderByActivityFrequency(workflowLog)
         };
         await EventLogStore.Add(logFile);
         MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private WorkflowLog OrderByActivityFrequency(WorkflowLog wfLog)
+    {
+        var comparer = new ActivitiesComparer();
+        return new WorkflowLog(wfLog.WorkflowTraces
+            .GroupBy(tr => tr.Activities, comparer)
+            .OrderByDescending(gr => gr.Count())
+            .SelectMany(gr => gr)
+            .ToList());
     }
 }

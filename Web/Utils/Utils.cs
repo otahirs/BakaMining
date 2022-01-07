@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace BakaMining.Utils;
 
@@ -57,5 +59,24 @@ public class Utils
     public static string GetDateReadable(DateTimeOffset metadataModified)
     {
         return metadataModified.ToString("dd.MM.yyyy H:mm");
+    }
+}
+
+public class ActivitiesComparer : IEqualityComparer<IList<string>>
+{
+    public bool Equals(IList<string> x, IList<string> y)
+    {
+        if (x == null || y == null) return false;
+        return x.SequenceEqual(y);
+    }
+
+    public int GetHashCode(IList<string> arr)
+    {
+        int hash = 19;
+        foreach (var s in arr)
+        {
+            hash += s.GetHashCode();
+        }
+        return hash;
     }
 }
