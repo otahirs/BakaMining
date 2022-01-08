@@ -12,7 +12,7 @@ window.InitGraph = (element) => {
         .fit(true)
         .transition(function () {
             return d3.transition("main")
-                .ease(d3.easeLinear)
+                .ease(d3.easeQuadInOut)
                 .duration(750);
         });
 };
