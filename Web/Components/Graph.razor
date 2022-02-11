@@ -2,6 +2,7 @@
 @using ProcessM.NET.Export
 @using ProcessM.NET.Model.BasicPetriNet
 @using System.Threading
+@using ProcessM.NET.Model.DisplayPetriNet
 @inject IJSRuntime JS
 <style>
     .node {
@@ -28,6 +29,13 @@
         height: 100%;
         width: 100%;
     }
+    
+    .context-menu {
+        --context-menu-background-color: white;
+        --context-menu-shadow: 0 4px 5px 0 rgba(0,0,0,0.14);
+        --anypoint-item-before-background: none;
+        --anypoint-item-focused-background-color: inherit;
+    }
 </style>
 @if (_petriNet == null)
 {
@@ -38,34 +46,54 @@
 
 @code {
     private ElementReference _graph;
+    private DotNetObjectReference<Graph> _objeRef;
 
-    private IPetriNet _petriNet;
+    private DPetriNet _petriNet;
+    private bool _simplify = true;
 
     bool _graphInitiated = false;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await JS.InvokeVoidAsync("InitGraph", _graph);
-            _graphInitiated = true;
-            if (_petriNet != null)
-            {
-                await RenderGraph(_petriNet);
-            }
-        }
-    }
+    
 
     public async Task RenderGraph(IPetriNet updatedPetriNet)
     {
-        _petriNet = updatedPetriNet;
+        _petriNet = new DPetriNet(updatedPetriNet);
         if (!_graphInitiated)
         {
-            return;
+            _objeRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("InitGraph", _graph, _objeRef);
+            _graphInitiated = true;
         }
-        var dotString = DOTExport.Serialize(_petriNet);
+        var dotString = DOTExport.Serialize(_petriNet, _simplify);
         await JS.InvokeVoidAsync("RenderGraph", dotString);
         StateHasChanged();
+    }
+
+    public async Task Simplify(bool simplify)
+    {
+        _simplify = simplify;
+        if (_graphInitiated)
+        {
+            var dotString = DOTExport.Serialize(_petriNet, _simplify);
+            await JS.InvokeVoidAsync("RenderGraph", dotString);
+        }
+    }
+    
+    [JSInvokable]
+    public async Task ChangeTransitionColor(string id, string newColor)
+    {
+        var transition = _petriNet.Transitions.First(t => t.Id == id);
+        transition.Color = newColor;
+        var dotString = DOTExport.Serialize(_petriNet, _simplify);
+        await JS.InvokeVoidAsync("RenderGraph", dotString);
+    }
+    
+    [JSInvokable]
+    public async Task HideTransition(string id)
+    {
+        var transition = _petriNet.Transitions.First(t => t.Id == id);
+        transition.Invisible = true;
+        var dotString = DOTExport.Serialize(_petriNet, _simplify);
+        await JS.InvokeVoidAsync("RenderGraph", dotString);
     }
 
 }

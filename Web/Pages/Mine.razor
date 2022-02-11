@@ -8,7 +8,6 @@
 @using ProcessM.NET.Model.BasicPetriNet
 @using ProcessM.NET.Model.DataAnalysis
 @using Blazor.DownloadFileFast.Interfaces
-@using BakaMining.Pages.Storage
 @inject IBlazorDownloadFileService DownloadFileService
 
 @if (string.IsNullOrEmpty(Filename))
@@ -64,8 +63,14 @@
                 </EditForm>
             </MudCardContent>
         </MudCard>
+        <MudCard Elevation="3" Class="mt-4">
+            <MudCardContent>
+                <MudSwitch Color="Color.Primary" T="bool" Label="Simplify graph"  Checked="_simplifyGraph" CheckedChanged="SimplifyChanged" />
+            </MudCardContent>
+        </MudCard>
         @if (_petriNet != null)
         {
+            
             <MudCard Elevation="3" Class="mt-4">
                 <MudCardContent>
                     <MudButton StartIcon="@Icons.Filled.Save" Variant="Variant.Outlined" Class="mb-2" OnClick="SaveModel">Save to Models</MudButton><br />
@@ -86,12 +91,13 @@
     private WorkflowLog _source_log { get; set; }
     private WorkflowLog _log { get; set; }
     private HeuristicMinerSettings _minerSettings = new();
-    private Miner _selectedMiner = Miner.Alpha;
+    private Miner _selectedMiner = Miner.Heuristic;
     private PetriNet _petriNet;
     private int _tracesMax;
     private int _tracesVisible;
     private int _tracesDistinct;
     private double _slider = 100;
+    private bool _simplifyGraph = true;
 
     enum Miner
     {
@@ -137,6 +143,12 @@
         }; 
         await _graph.RenderGraph(_petriNet);
         StateHasChanged();
+    }
+
+    private async Task SimplifyChanged(bool simplify)
+    {
+        _simplifyGraph = simplify;
+        await _graph.Simplify(simplify);
     }
     
     private async Task SaveModel()
