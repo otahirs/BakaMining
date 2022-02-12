@@ -81,8 +81,7 @@
     [JSInvokable]
     public async Task ChangeTransitionColor(string id, string newColor)
     {
-        var transition = _petriNet.Transitions.First(t => t.Id == id);
-        transition.Color = newColor;
+        _petriNet.ChangeActivityColor(id, newColor);
         var dotString = DOTExport.Serialize(_petriNet, _simplify);
         await JS.InvokeVoidAsync("RenderGraph", dotString);
     }
@@ -90,8 +89,7 @@
     [JSInvokable]
     public async Task HideTransition(string id)
     {
-        var transition = _petriNet.Transitions.First(t => t.Id == id);
-        transition.Invisible = true;
+        _petriNet.ToggleActivityHidden(id);
         var dotString = DOTExport.Serialize(_petriNet, _simplify);
         await JS.InvokeVoidAsync("RenderGraph", dotString);
     }
