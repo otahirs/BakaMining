@@ -54,7 +54,7 @@
                     <MudText Typo="Typo.subtitle2">@Utils.GetDateReadable(netFile.Metadata.Modified)</MudText>
                 </td>
                 <td>
-                    <MudFab Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error" OnClick="() => RemoveNet(netFile.Metadata.Name)"/>
+                    <MudFab Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" OnClick="() => RemoveNet(netFile.Metadata.Name)"/>
                 </td>
             </tr>
         }

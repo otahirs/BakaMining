@@ -35,7 +35,7 @@
                     <MudText Typo="Typo.subtitle2">@Utils.GetDateReadable(logFile.Metadata.Modified)</MudText>
                 </td>
                 <td>
-                    <MudFab Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error" OnClick="() => RemoveLog(logFile.Metadata.Name)"/>
+                    <MudFab Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" OnClick="() => RemoveLog(logFile.Metadata.Name)"/>
                 </td>
             </tr>
         }

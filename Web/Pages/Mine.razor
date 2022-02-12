@@ -12,7 +12,7 @@
 
 @if (string.IsNullOrEmpty(Filename))
 {
-    <MudAlert Severity="Severity.Info">Go to <MudLink Href="/">Logs</MudLink> to select a file to mine.</MudAlert>
+    <MudAlert Severity="Severity.Info">Go to <MudLink Href="/Storage/Logs">Logs</MudLink> to select a file to mine.</MudAlert>
     return;
 }
 <MudGrid>
@@ -25,6 +25,10 @@
         </MudPaper>
     </MudItem>
     <MudItem xs="2">
+        @if (_selectedMiner == Miner.Alpha)
+        {
+            <MudAlert Severity="Severity.Warning" Class="mb-4">Alpha miner is very slow for larger logs.</MudAlert>
+        }
         <MudCard Elevation="3">
             <MudCardContent>
                 <EditForm Model="@_minerSettings" OnValidSubmit="OnValidSubmit">
@@ -42,13 +46,13 @@
                             break;
                         case Miner.Heuristic:
                             <MudNumericField T="double" Label="Dependency Threshold" HelperText=""
-                                             @bind-Value="_minerSettings.DependencyThreshold" For="@(() => _minerSettings.DependencyThreshold)" Step="0.05" Format="N2" />
+                                             @bind-Value="_minerSettings.DependencyThreshold" For="@(() => _minerSettings.DependencyThreshold)" Step="0.05" Format="N2"/>
                             <MudNumericField T="double" Label="L1L Threshold" HelperText="" Class="mt-3"
-                                             @bind-Value="_minerSettings.L1LThreshold" For="@(() => _minerSettings.L1LThreshold)" Step="0.05" Format="N2" />
+                                             @bind-Value="_minerSettings.L1LThreshold" For="@(() => _minerSettings.L1LThreshold)" Step="0.05" Format="N2"/>
                             <MudNumericField T="double" Label="L2L Threshold" HelperText="" Class="mt-3"
-                                             @bind-Value="_minerSettings.L2LThreshold" For="@(() => _minerSettings.L2LThreshold)" Step="0.05" Format="N2" />
+                                             @bind-Value="_minerSettings.L2LThreshold" For="@(() => _minerSettings.L2LThreshold)" Step="0.05" Format="N2"/>
                             <MudNumericField T="double" Label="Relative To Best Threshold" HelperText="" Class="mt-3"
-                                             @bind-Value="_minerSettings.RelativeToBestThreshold" For="@(() => _minerSettings.RelativeToBestThreshold)" Step="0.05" Format="N2" />
+                                             @bind-Value="_minerSettings.RelativeToBestThreshold" For="@(() => _minerSettings.RelativeToBestThreshold)" Step="0.05" Format="N2"/>
                             <MudSwitch Color="Color.Primary" Label="All Tasks Connected" Class="mt-3"
                                        @bind-Checked="_minerSettings.AllTasksConnected" For="@(() => _minerSettings.AllTasksConnected)"/>
                             <br/>
