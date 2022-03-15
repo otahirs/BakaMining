@@ -24,7 +24,8 @@
             <Graph 
                 @ref="_graph" 
                 OnTransitionColorChanged="TransitionColorChanged" 
-                OnTransitionVisibilityChanged="TransitionVisibilityChanged" />
+                OnTransitionVisibilityChanged="TransitionVisibilityChanged"
+                OnRenderingFinished="RemoveOverlay" />
         </MudPaper>
     </MudItem>
     <MudItem xs="2">
@@ -123,10 +124,15 @@
     
 </MudGrid>
 
+<MudOverlay @bind-Visible="overlayActive" DarkBackground="true">
+    <MudText Typo="Typo.h1">Computation in progress</MudText>
+</MudOverlay>
 
 @code {
     [Parameter]
     public string Filename { get; set; }
+
+    private bool overlayActive = false;
     private Graph _graph { get; set; } = new();
     private WorkflowLog _source_log { get; set; }
     private WorkflowLog _log { get; set; }
@@ -179,11 +185,21 @@
 
     private async Task UpdateGraph()
     {
-        _petriNet = _selectedMiner switch {
-            Miner.Heuristic => HeuristicMiner.MinePetriNet(_log, _minerSettings),
-            Miner.Alpha => Alpha.MakePetriNet(new RelationMatrix(_log))
-        }; 
-        await _graph.RenderGraph(_petriNet);
+        overlayActive = true;
+        await Task.Run(() => // async, so the component is re-rendered
+        {
+            _petriNet = _selectedMiner switch {
+                Miner.Heuristic => HeuristicMiner.MinePetriNet(_log, _minerSettings),
+                Miner.Alpha => Alpha.MakePetriNet(new RelationMatrix(_log))
+                };
+        });
+        await _graph.RenderGraph(_petriNet, _hiddenTransitions, _changedColors);
+        StateHasChanged();
+    }
+
+    private void RemoveOverlay()
+    {
+        overlayActive = false;
         StateHasChanged();
     }
 

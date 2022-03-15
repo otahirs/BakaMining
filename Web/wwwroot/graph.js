@@ -31,6 +31,7 @@ window.InitGraph = (element, csharpObjectRef) => {
             });
 
             rebuildContextMenu();
+            window.csharpGraphRef.invokeMethodAsync('JsRenderingFinished');
         });
 };
 

@@ -115,4 +115,13 @@
         await OnTransitionVisibilityChanged.InvokeAsync((id, true));
     }
 
+    
+    [Parameter]
+    public EventCallback OnRenderingFinished { get; set; }
+    
+    [JSInvokable]
+    public async Task JsRenderingFinished()
+    {
+        await OnRenderingFinished.InvokeAsync();
+    }
 }
