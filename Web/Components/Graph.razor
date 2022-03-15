@@ -53,9 +53,23 @@
     bool _graphInitiated = false;
     
 
-    public async Task RenderGraph(IPetriNet updatedPetriNet)
+    public async Task RenderGraph(IPetriNet updatedPetriNet, HashSet<string> hiddenTransitions = null, Dictionary<string, string> changedColors = null)
     {
         _petriNet = new DPetriNet(updatedPetriNet);
+        if (hiddenTransitions != null)
+        {
+            foreach (var t in _petriNet.Transitions
+                .Where(t => 
+                    !t.Invisible && hiddenTransitions.Contains(t.Id) ||
+                    t.Invisible && !hiddenTransitions.Contains(t.Id)))
+            {
+                t.ChangeVisibility();
+            }
+        }
+        if (changedColors != null)
+        {
+            _petriNet.TransitionColor = changedColors;
+        }
         if (!_graphInitiated)
         {
             _objeRef = DotNetObjectReference.Create(this);
@@ -77,13 +91,20 @@
         }
     }
     
+    [Parameter]
+    public EventCallback<(string, string)> OnTransitionColorChanged { get; set; }
+    
     [JSInvokable]
     public async Task ChangeTransitionColor(string id, string newColor)
     {
         _petriNet.ChangeActivityColor(id, newColor);
         var dotString = DOTExport.Serialize(_petriNet, _simplify);
         await JS.InvokeVoidAsync("RenderGraph", dotString);
+        await OnTransitionColorChanged.InvokeAsync((id, newColor));
     }
+    
+    [Parameter]
+    public EventCallback<(string, bool)> OnTransitionVisibilityChanged { get; set; }
     
     [JSInvokable]
     public async Task HideTransition(string id)
@@ -91,6 +112,7 @@
         _petriNet.ToggleActivityHidden(id);
         var dotString = DOTExport.Serialize(_petriNet, _simplify);
         await JS.InvokeVoidAsync("RenderGraph", dotString);
+        await OnTransitionVisibilityChanged.InvokeAsync((id, true));
     }
 
 }

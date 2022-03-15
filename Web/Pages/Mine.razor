@@ -21,7 +21,10 @@
     </MudItem>
     <MudItem xs="10" Style="background-color: white; height: 80vh">
         <MudPaper Elevation="0" Style="height: 100%">
-            <Graph @ref="_graph"/>
+            <Graph 
+                @ref="_graph" 
+                OnTransitionColorChanged="TransitionColorChanged" 
+                OnTransitionVisibilityChanged="TransitionVisibilityChanged" />
         </MudPaper>
     </MudItem>
     <MudItem xs="2">
@@ -74,12 +77,45 @@
         </MudCard>
         @if (_petriNet != null)
         {
-            
             <MudCard Elevation="3" Class="mt-4">
                 <MudCardContent>
                     <MudButton StartIcon="@Icons.Filled.Save" Variant="Variant.Outlined" Class="mb-2" OnClick="SaveModel">Save to Models</MudButton><br />
                     <MudButton StartIcon="@Icons.Filled.Download" Variant="Variant.Outlined" OnClick="DownloadPNML">PNML</MudButton>
                     <MudButton StartIcon="@Icons.Filled.Download" Variant="Variant.Outlined" OnClick="DownloadDOT">DOT</MudButton>
+                </MudCardContent>
+            </MudCard>
+            
+            <MudCard Elevation="3" Class="mt-4">
+                <MudCardContent>
+                    <h3>Hide transitions</h3>
+                    <MudAlert Severity="Severity.Info">Mine to apply changes</MudAlert>
+                    <table>
+                        <thead>
+                        <tr><td><b>activity</b></td><td><b>visible</b></td></tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var transition in _petriNet.Transitions
+                            .Where(t => !string.IsNullOrEmpty(t.Activity) &&
+                                        t.Activity != "<<start>>" &&
+                                        t.Activity != "<<end>>"))
+                        {
+                            <tr>
+                                <td>@transition.Activity</td>
+                                <td>
+                                    <MudToggleIconButton
+                                        Toggled="_hiddenTransitions.Contains(transition.Id)"
+                                        ToggledChanged="() => TransitionVisibilityChanged((transition.Id, !_hiddenTransitions.Contains(transition.Id)))"
+                                        Icon="@Icons.Filled.Check"
+                                        Color="@Color.Default"
+                                        Title="Shown"
+                                        ToggledIcon="@Icons.Filled.HideSource"
+                                        ToggledColor="@Color.Error"
+                                        ToggledTitle="Hidden"/>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
                 </MudCardContent>
             </MudCard>
         }
@@ -102,6 +138,8 @@
     private int _tracesDistinct;
     private double _slider = 100;
     private bool _simplifyGraph = true;
+    private HashSet<string> _hiddenTransitions = new();
+    private Dictionary<string, string> _changedColors = new();
 
     enum Miner
     {
@@ -195,6 +233,27 @@
             lastTrace = trace.Activities;
         }
         _tracesDistinct = count;
+    }
+
+    private void TransitionColorChanged((string, string) args)
+    {
+        var transitionId = args.Item1;
+        var newColor = args.Item2;
+        _changedColors[transitionId] = newColor;
+    }
+
+    private void TransitionVisibilityChanged((string, bool) args)
+    {
+        var transitionId = args.Item1;
+        var hidden = args.Item2;
+        if (hidden)
+        {
+            _hiddenTransitions.Add(transitionId);
+        }
+        else
+        {
+            _hiddenTransitions.Remove(transitionId);
+        }
     }
 
 }
