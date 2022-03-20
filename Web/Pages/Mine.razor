@@ -31,7 +31,7 @@
     <MudItem xs="2">
         @if (_selectedMiner == Miner.Alpha)
         {
-            <MudAlert Severity="Severity.Warning" Class="mb-4">Alpha miner is very slow for larger logs.</MudAlert>
+            <MudAlert Severity="Severity.Warning" Class="mb-4">Alpha miner implementation slows down exponentionaly in relation to distinct traces. You have been warned. Use Heuristic miner instead.</MudAlert>
         }
         <MudCard Elevation="3">
             <MudCardContent>
