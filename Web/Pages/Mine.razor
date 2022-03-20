@@ -80,24 +80,20 @@
         {
             <MudCard Elevation="3" Class="mt-4">
                 <MudCardContent>
-                    <h3>Hide transitions</h3>
-                    <MudAlert Severity="Severity.Info">Mine to apply changes</MudAlert>
+                    <h3>Filter transitions</h3>
                     <table>
                         <thead>
                         <tr><td><b>activity</b></td><td><b>visible</b></td></tr>
                         </thead>
                         <tbody>
-                        @foreach (var transition in _petriNet.Transitions
-                            .Where(t => !string.IsNullOrEmpty(t.Activity) &&
-                                        t.Activity != "<<start>>" &&
-                                        t.Activity != "<<end>>"))
+                        @foreach (var (activity, freq) in _activities)
                         {
                             <tr>
-                                <td>@transition.Activity</td>
+                                <td>@activity @if(_selectedMiner == Miner.Heuristic) {<span>(@freq)</span>}</td>
                                 <td>
                                     <MudToggleIconButton
-                                        Toggled="_hiddenTransitions.Contains(transition.Id)"
-                                        ToggledChanged="() => TransitionVisibilityChanged((transition.Id, !_hiddenTransitions.Contains(transition.Id)))"
+                                        Toggled="_hiddenActivities.Contains(activity)"
+                                        ToggledChanged="() => TransitionVisibilityChanged((activity, !_hiddenActivities.Contains(activity)))"
                                         Icon="@Icons.Filled.Check"
                                         Color="@Color.Default"
                                         Title="Shown"
@@ -144,7 +140,8 @@
     private int _tracesDistinct;
     private double _slider = 100;
     private bool _simplifyGraph = true;
-    private HashSet<string> _hiddenTransitions = new();
+    private Dictionary<string, int> _activities = new();
+    private HashSet<string> _hiddenActivities = new();
     private Dictionary<string, string> _changedColors = new();
 
     enum Miner
@@ -164,7 +161,7 @@
             var logFile = await EventLogStore.Get(Filename);
             _log = _source_log = logFile.EventLog;
             _tracesMax = _tracesVisible = _log.WorkflowTraces.Count;
-            UpdateDistinctTracesCount();
+            UpdateTraces();
             StateHasChanged();
         }
     }
@@ -172,6 +169,7 @@
     private async Task OnValidSubmit()
     {
         await UpdateGraph();
+        UpdateTracesFreq();
     }
 
     private void FilterLog(double visiblePercentage)
@@ -180,7 +178,7 @@
         var tracesCount = Convert.ToInt32(_tracesMax * visiblePercentage / 100) ;
         _tracesVisible = tracesCount > 0 ? tracesCount : 1;
         _log = new WorkflowLog(_source_log.WorkflowTraces.Take(_tracesVisible).ToList());
-        UpdateDistinctTracesCount();
+        UpdateTraces();
     }
 
     private async Task UpdateGraph()
@@ -188,12 +186,14 @@
         overlayActive = true;
         await Task.Run(() => // async, so the component is re-rendered
         {
+            var log = _log.Clone();
+            WorkflowLogUtils.WorkflowLogPreprocessor(log, _hiddenActivities);
             _petriNet = _selectedMiner switch {
-                Miner.Heuristic => HeuristicMiner.MinePetriNet(_log, _minerSettings),
-                Miner.Alpha => Alpha.MakePetriNet(new RelationMatrix(_log))
+                Miner.Heuristic => HeuristicMiner.MinePetriNet(log, _minerSettings),
+                Miner.Alpha => Alpha.MakePetriNet(new RelationMatrix(log))
                 };
         });
-        await _graph.RenderGraph(_petriNet, _hiddenTransitions, _changedColors);
+        await _graph.RenderGraph(_petriNet, _changedColors);
         StateHasChanged();
     }
 
@@ -236,8 +236,9 @@
         await DownloadFileService.DownloadFileAsync(Filename.Substring(0, Filename.Length - 3)  + "dot", file);
     }
 
-    private void UpdateDistinctTracesCount()
+    private void UpdateTraces()
     {
+        _activities.Clear();
         int count = 0;
         var lastTrace = new List<string>();
         foreach (var trace in _log.WorkflowTraces)
@@ -247,8 +248,30 @@
                 count += 1;
             }
             lastTrace = trace.Activities;
+            foreach (var activity in trace.Activities.Where(a =>
+                !string.IsNullOrEmpty(a) &&
+                a != "<<start>>" &&
+                a != "<<end>>"))
+            {
+                _activities[activity] = 0;
+            }
         }
         _tracesDistinct = count;
+        UpdateTracesFreq();
+    }
+    
+    private void UpdateTracesFreq()
+    {
+        if (_petriNet != null)
+        {
+            foreach (var transition in _petriNet.Transitions)
+            {
+                _activities[transition.Activity] = transition.Frequency;
+            }
+        }
+        _activities.Remove("<<start>>");
+        _activities.Remove("<<end>>");
+        _activities.Remove("");
     }
 
     private void TransitionColorChanged((string, string) args)
@@ -258,18 +281,19 @@
         _changedColors[transitionId] = newColor;
     }
 
-    private void TransitionVisibilityChanged((string, bool) args)
+    private async Task TransitionVisibilityChanged((string, bool) args)
     {
-        var transitionId = args.Item1;
+        var activity = args.Item1;
         var hidden = args.Item2;
         if (hidden)
         {
-            _hiddenTransitions.Add(transitionId);
+            _hiddenActivities.Add(activity);
         }
         else
         {
-            _hiddenTransitions.Remove(transitionId);
+            _hiddenActivities.Remove(activity);
         }
+        await UpdateGraph();
     }
 
 }

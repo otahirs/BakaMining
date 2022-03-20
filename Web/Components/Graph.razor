@@ -53,19 +53,9 @@
     bool _graphInitiated = false;
     
 
-    public async Task RenderGraph(IPetriNet updatedPetriNet, HashSet<string> hiddenTransitions = null, Dictionary<string, string> changedColors = null)
+    public async Task RenderGraph(IPetriNet updatedPetriNet, Dictionary<string, string> changedColors = null)
     {
         _petriNet = new DPetriNet(updatedPetriNet);
-        if (hiddenTransitions != null)
-        {
-            foreach (var t in _petriNet.Transitions
-                .Where(t => 
-                    !t.Invisible && hiddenTransitions.Contains(t.Id) ||
-                    t.Invisible && !hiddenTransitions.Contains(t.Id)))
-            {
-                t.ChangeVisibility();
-            }
-        }
         if (changedColors != null)
         {
             _petriNet.TransitionColor = changedColors;
@@ -107,12 +97,9 @@
     public EventCallback<(string, bool)> OnTransitionVisibilityChanged { get; set; }
     
     [JSInvokable]
-    public async Task HideTransition(string id)
+    public async Task HideTransition(string activity)
     {
-        _petriNet.ToggleActivityHidden(id);
-        var dotString = DOTExport.Serialize(_petriNet, _simplify);
-        await JS.InvokeVoidAsync("RenderGraph", dotString);
-        await OnTransitionVisibilityChanged.InvokeAsync((id, true));
+        await OnTransitionVisibilityChanged.InvokeAsync((activity, true));
     }
 
     
