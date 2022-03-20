@@ -19,6 +19,11 @@ window.InitGraph = (element, csharpObjectRef) => {
                 .ease(d3.easeQuadInOut)
                 .duration(750);
         })
+        //.tweenShapes(false)
+        //.tweenPaths(false)
+        .on('renderEnd', () => {
+            window.csharpGraphRef.invokeMethodAsync('JsRenderingFinished');
+        })
         .on('end', () => {
             let transitions = element.querySelectorAll('.transition');
             [...transitions].forEach((t) => {
@@ -31,7 +36,6 @@ window.InitGraph = (element, csharpObjectRef) => {
             });
 
             rebuildContextMenu();
-            window.csharpGraphRef.invokeMethodAsync('JsRenderingFinished');
         });
 };
 
