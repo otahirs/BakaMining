@@ -80,14 +80,6 @@
         {
             <MudCard Elevation="3" Class="mt-4">
                 <MudCardContent>
-                    <MudButton StartIcon="@Icons.Filled.Save" Variant="Variant.Outlined" Class="mb-2" OnClick="SaveModel">Save to Models</MudButton><br />
-                    <MudButton StartIcon="@Icons.Filled.Download" Variant="Variant.Outlined" OnClick="DownloadPNML">PNML</MudButton>
-                    <MudButton StartIcon="@Icons.Filled.Download" Variant="Variant.Outlined" OnClick="DownloadDOT">DOT</MudButton>
-                </MudCardContent>
-            </MudCard>
-            
-            <MudCard Elevation="3" Class="mt-4">
-                <MudCardContent>
                     <h3>Hide transitions</h3>
                     <MudAlert Severity="Severity.Info">Mine to apply changes</MudAlert>
                     <table>
@@ -117,6 +109,14 @@
                         }
                         </tbody>
                     </table>
+                </MudCardContent>
+            </MudCard>
+            
+            <MudCard Elevation="3" Class="mt-4">
+                <MudCardContent>
+                    <MudButton StartIcon="@Icons.Filled.Save" Variant="Variant.Outlined" Class="mb-2" OnClick="SaveModel">Save to Models</MudButton><br />
+                    <MudButton StartIcon="@Icons.Filled.Download" Variant="Variant.Outlined" OnClick="DownloadPNML">PNML</MudButton>
+                    <MudButton StartIcon="@Icons.Filled.Download" Variant="Variant.Outlined" OnClick="DownloadDOT">DOT</MudButton>
                 </MudCardContent>
             </MudCard>
         }
