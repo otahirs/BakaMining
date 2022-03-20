@@ -5,9 +5,8 @@
 @inject IDialogService DialogService
 
 <h2>Logs</h2>
-<MudButton OnClick="OpenDialog" StartIcon="@Icons.Material.Outlined.FileUpload" Variant="Variant.Filled" Color="Color.Primary" Class="my-4">
-    Import file - CSV
-</MudButton>
+<LogUpload OnLogUploaded="LoadLogs" />
+
 <MudSimpleTable Elevation="0" Hover="true">
     <thead>
         <tr>
@@ -53,12 +52,6 @@
     private async Task LoadLogs()
     {
         _logs = await EventLogStore.GetAll();
-    }
-    
-    private async Task OpenDialog()
-    {
-        await DialogService.Show<DialogLogUplaod>("Import file - CSV").Result;
-        await LoadLogs();
     }
 
     private async Task RemoveLog(string logFileName)
