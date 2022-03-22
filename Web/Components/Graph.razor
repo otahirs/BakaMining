@@ -2,7 +2,7 @@
 @using ProcessM.NET.Export
 @using ProcessM.NET.Model.BasicPetriNet
 @using System.Threading
-@using ProcessM.NET.Model.DisplayPetriNet
+@using ProcessM.NET.Model.GraphvizNet
 @inject IJSRuntime JS
 <style>
     .node {
@@ -36,7 +36,7 @@
         --anypoint-item-focused-background-color: inherit;
     }
 </style>
-@if (_petriNet == null)
+@if (_graphvizNet == null)
 {
     <MudText>Let's mine</MudText>
 }
@@ -47,7 +47,7 @@
     private ElementReference _graph;
     private DotNetObjectReference<Graph> _objeRef;
 
-    private DPetriNet _petriNet;
+    private GraphvizNet _graphvizNet;
     private bool _simplify = true;
 
     bool _graphInitiated = false;
@@ -55,18 +55,21 @@
 
     public async Task RenderGraph(IPetriNet updatedPetriNet, Dictionary<string, string> changedColors = null)
     {
-        _petriNet = new DPetriNet(updatedPetriNet);
-        if (changedColors != null)
-        {
-            _petriNet.TransitionColor = changedColors;
-        }
         if (!_graphInitiated)
         {
             _objeRef = DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("InitGraph", _graph, _objeRef);
             _graphInitiated = true;
         }
-        var dotString = DOTExport.Serialize(_petriNet, _simplify);
+        _graphvizNet = new GraphvizNet(updatedPetriNet);
+        if (changedColors is not null)
+        {
+            foreach (var (id, color) in changedColors)
+            {
+                _graphvizNet.ChangeTransitionColor(id, color);
+            }
+        }
+        var dotString = DOTExport.Serialize(_graphvizNet, _simplify);
         await JS.InvokeVoidAsync("RenderGraph", dotString);
         StateHasChanged();
     }
@@ -76,7 +79,7 @@
         _simplify = simplify;
         if (_graphInitiated)
         {
-            var dotString = DOTExport.Serialize(_petriNet, _simplify);
+            var dotString = DOTExport.Serialize(_graphvizNet, _simplify);
             await JS.InvokeVoidAsync("RenderGraph", dotString);
         }
     }
@@ -87,8 +90,8 @@
     [JSInvokable]
     public async Task ChangeTransitionColor(string id, string newColor)
     {
-        _petriNet.ChangeActivityColor(id, newColor);
-        var dotString = DOTExport.Serialize(_petriNet, _simplify);
+        _graphvizNet.ChangeTransitionColor(id, newColor);
+        var dotString = DOTExport.Serialize(_graphvizNet, _simplify);
         await JS.InvokeVoidAsync("RenderGraph", dotString);
         await OnTransitionColorChanged.InvokeAsync((id, newColor));
     }

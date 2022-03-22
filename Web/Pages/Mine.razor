@@ -169,7 +169,7 @@
     private async Task OnValidSubmit()
     {
         await UpdateGraph();
-        UpdateTracesFreq();
+        //UpdateTracesFreq();
     }
 
     private void FilterLog(double visiblePercentage)
@@ -257,22 +257,22 @@
             }
         }
         _tracesDistinct = count;
-        UpdateTracesFreq();
+        //UpdateTracesFreq();
     }
     
-    private void UpdateTracesFreq()
-    {
-        if (_petriNet != null)
-        {
-            foreach (var transition in _petriNet.Transitions)
-            {
-                _activities[transition.Activity] = transition.Frequency;
-            }
-        }
-        _activities.Remove("<<start>>");
-        _activities.Remove("<<end>>");
-        _activities.Remove("");
-    }
+    // private void UpdateTracesFreq()
+    // {
+    //     if (_petriNet != null)
+    //     {
+    //         foreach (var transition in _petriNet.Transitions)
+    //         {
+    //             _activities[transition.Activity] = transition.Frequency;
+    //         }
+    //     }
+    //     _activities.Remove("<<start>>");
+    //     _activities.Remove("<<end>>");
+    //     _activities.Remove("");
+    // }
 
     private void TransitionColorChanged((string, string) args)
     {
