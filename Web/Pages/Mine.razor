@@ -30,45 +30,57 @@
         </MudPaper>
     </MudItem>
     <MudItem xs="2">
-        @if (_selectedMiner == Miner.Alpha)
-        {
-            <MudAlert Severity="Severity.Warning" Class="mb-4">Alpha miner implementation slows down exponentionaly in relation to distinct traces. You have been warned. Use Heuristic miner instead.</MudAlert>
-        }
         <MudCard Elevation="3">
             <MudCardContent>
                 <EditForm Model="@_minerSettings" OnValidSubmit="OnValidSubmit">
                     <DataAnnotationsValidator/>
                     <MudText Typo="Typo.h3">Miner</MudText>
-                    <MudSelect T="Miner" Label="Miner" AnchorOrigin="Origin.BottomCenter" Required="true" @bind-Value=@_selectedMiner Class="mb-4">
+                    <MudSelect T="Miner" Label="Miner implementation" AnchorOrigin="Origin.BottomCenter" @bind-Value=@_selectedMiner Class="mb-4">
                         @foreach (var m in Enum.GetValues<Miner>())
                         {
                             <MudSelectItem Value="@(m)"/>
                         }
                     </MudSelect>
-                    @switch (_selectedMiner)
+                    @if (_selectedMiner == Miner.Alpha)
                     {
-                        case Miner.Alpha:
-                            break;
-                        case Miner.Heuristic:
-                            <MudNumericField T="double" Label="Dependency Threshold" HelperText=""
-                                             @bind-Value="_minerSettings.DependencyThreshold" For="@(() => _minerSettings.DependencyThreshold)" Step="0.05" Format="N2"/>
-                            <MudNumericField T="double" Label="L1L Threshold" HelperText="" Class="mt-3"
-                                             @bind-Value="_minerSettings.L1LThreshold" For="@(() => _minerSettings.L1LThreshold)" Step="0.05" Format="N2"/>
-                            <MudNumericField T="double" Label="L2L Threshold" HelperText="" Class="mt-3"
-                                             @bind-Value="_minerSettings.L2LThreshold" For="@(() => _minerSettings.L2LThreshold)" Step="0.05" Format="N2"/>
-                            <MudNumericField T="double" Label="Relative To Best Threshold" HelperText="" Class="mt-3"
-                                             @bind-Value="_minerSettings.RelativeToBestThreshold" For="@(() => _minerSettings.RelativeToBestThreshold)" Step="0.05" Format="N2"/>
-                            <MudSwitch Color="Color.Primary" Label="All Tasks Connected" Class="mt-3"
+                        <MudAlert Severity="Severity.Warning" Class="mb-4">Alpha miner implementation slows down exponentionaly in relation to distinct traces. You have been warned. Use Heuristic miner instead.</MudAlert>
+                    }
+                    @if (_selectedMiner == Miner.Heuristic)
+                    {
+                        <MudNumericField T="double" Label="Direct dependency (a ⇒ b) " HelperText="Absolute dependency threshold <0,1>" Min="0" Max="1" Step="0.05" Format="N2" HelperTextOnFocus="true"
+                                         @bind-Value="_minerSettings.DependencyThreshold" For="@(() => _minerSettings.DependencyThreshold)"/>
+                        <MudNumericField T="double" Label="Self loop (a ⇒ a)" HelperText="Length loop 1 dependency threshold <0,1>" Min="0" Max="1" Step="0.05" Format="N2" HelperTextOnFocus="true"
+                                         @bind-Value="_minerSettings.L1LThreshold" For="@(() => _minerSettings.L1LThreshold)"/>
+                        <MudNumericField T="double" Label="Loop length 2 (a ⇒ b ⇒ a)" HelperText="Length 2 loop dependency threshold <0,1>" Min="0" Max="1" Step="0.05" Format="N2" HelperTextOnFocus="true"
+                                         @bind-Value="_minerSettings.L2LThreshold" For="@(() => _minerSettings.L2LThreshold)"/>
+                        <br/>
+                        <MudTooltip Text="Ensure each activity has at least one in and one out arcs">
+                            <MudSwitch Color="Color.Primary" Label="All tasks connected"
                                        @bind-Checked="_minerSettings.AllTasksConnected" For="@(() => _minerSettings.AllTasksConnected)"/>
-                            <br/>
-                            <MudSwitch Color="Color.Primary" Label="Use Long Distance" HelperText="" Class="mt-3"
+                        </MudTooltip>
+                        @if (_minerSettings.AllTasksConnected)
+                        {
+                            <MudTooltip Text="Apart from the arcs exceeding Absolute dependency threshold, we also accept arcs with dependency value over threshold consisting of: best dependency value of arc coming to or from an activity, plus the relative-to-best threshold">
+                                <MudNumericField T="double" Label="Relative to best" Min="0" Max="1" Step="0.05" Format="N2" HelperText="Relative to best threshold <0,1>" HelperTextOnFocus="true"
+                                                 @bind-Value="_minerSettings.RelativeToBestThreshold" For="@(() => _minerSettings.RelativeToBestThreshold)"/>
+                            </MudTooltip>
+                        }
+                        <MudTooltip Text="Try to find long distance dependencies with indirect relation between tasks. Find pairs of tasks with similar frequencies in which the first task is directly or indirectly followed by the second one.">
+                            <MudSwitch Color="Color.Primary" Label="Long distance dependencies"
                                        @bind-Checked="_minerSettings.UseLongDistance" For="@(() => _minerSettings.UseLongDistance)"/>
-                            <MudNumericField T="double" Label="Long Distance Threshold" HelperText="" Class="mt-3" Disabled="!_minerSettings.UseLongDistance"
-                                             @bind-Value="_minerSettings.LongDistanceThreshold" For="@(() => _minerSettings.LongDistanceThreshold)"/>
-                            break;
+                        </MudTooltip>
+                        @if (_minerSettings.UseLongDistance)
+                        {
+                            <MudTooltip>
+                                <MudNumericField T="double" Label="Long distance (a {⇒}* b)" Min="0" Max="1" Step="0.05" Format="N2" HelperText="Long distance threshold <0,1>" HelperTextOnFocus="true"
+                                                 @bind-Value="_minerSettings.LongDistanceThreshold" For="@(() => _minerSettings.LongDistanceThreshold)"/>
+                            </MudTooltip>
+                        }
+                        
                     }
                     <MudSlider T="double" Value="_slider" ValueChanged="FilterLog" Min="0" Max="100" Step="0.05">traces: @_tracesVisible / @_tracesMax (dist. @_tracesDistinct)</MudSlider>
-                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="mt-2">Mine</MudButton>
+                    <br />
+                    <MudButton ButtonType="ButtonType.Submit" FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" Class="mt-2">Mine</MudButton>
                 </EditForm>
             </MudCardContent>
         </MudCard>
