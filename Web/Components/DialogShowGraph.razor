@@ -1,4 +1,5 @@
 ﻿@using ProcessM.NET.Model.BasicPetriNet
+@using ProcessM.NET.Model.GraphvizNet
 
 <MudDialog>
     <DialogContent>
@@ -22,6 +23,6 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await _graph.RenderGraph(PetriNet);
+        await _graph.RenderGraph(new GraphvizNet(PetriNet));
     }
 }

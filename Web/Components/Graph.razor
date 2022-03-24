@@ -53,15 +53,15 @@
     bool _graphInitiated = false;
     
 
-    public async Task RenderGraph(IPetriNet updatedPetriNet, Dictionary<string, string> changedColors = null)
+    public async Task RenderGraph(GraphvizNet updatedNet, Dictionary<string, string> changedColors = null)
     {
+        _graphvizNet = updatedNet;
         if (!_graphInitiated)
         {
             _objeRef = DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("InitGraph", _graph, _objeRef);
             _graphInitiated = true;
         }
-        _graphvizNet = new GraphvizNet(updatedPetriNet);
         if (changedColors is not null)
         {
             foreach (var (id, color) in changedColors)

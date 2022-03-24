@@ -8,6 +8,7 @@
 @using ProcessM.NET.Model.BasicPetriNet
 @using ProcessM.NET.Model.DataAnalysis
 @using Blazor.DownloadFileFast.Interfaces
+@using ProcessM.NET.Model.GraphvizNet
 @inject IBlazorDownloadFileService DownloadFileService
 
 @if (string.IsNullOrEmpty(Filename))
@@ -76,38 +77,37 @@
                 <MudSwitch Color="Color.Primary" T="bool" Label="Simplify graph"  Checked="_simplifyGraph" CheckedChanged="SimplifyChanged" />
             </MudCardContent>
         </MudCard>
+        <MudCard Elevation="3" Class="mt-4">
+            <MudCardContent>
+                <h3>Filter transitions</h3>
+                <table>
+                    <thead>
+                    <tr><td><b>activity</b></td><td><b>visible</b></td></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var (activity, freq) in _activities)
+                    {
+                        <tr>
+                            <td>@activity @if(_selectedMiner == Miner.Heuristic) {<span>(@freq)</span>}</td>
+                            <td>
+                                <MudToggleIconButton
+                                    Toggled="_hiddenActivities.Contains(activity)"
+                                    ToggledChanged="() => TransitionVisibilityChanged((activity, !_hiddenActivities.Contains(activity)))"
+                                    Icon="@Icons.Filled.Check"
+                                    Color="@Color.Default"
+                                    Title="Shown"
+                                    ToggledIcon="@Icons.Filled.HideSource"
+                                    ToggledColor="@Color.Error"
+                                    ToggledTitle="Hidden"/>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </MudCardContent>
+        </MudCard>
         @if (_petriNet != null)
         {
-            <MudCard Elevation="3" Class="mt-4">
-                <MudCardContent>
-                    <h3>Filter transitions</h3>
-                    <table>
-                        <thead>
-                        <tr><td><b>activity</b></td><td><b>visible</b></td></tr>
-                        </thead>
-                        <tbody>
-                        @foreach (var (activity, freq) in _activities)
-                        {
-                            <tr>
-                                <td>@activity @if(_selectedMiner == Miner.Heuristic) {<span>(@freq)</span>}</td>
-                                <td>
-                                    <MudToggleIconButton
-                                        Toggled="_hiddenActivities.Contains(activity)"
-                                        ToggledChanged="() => TransitionVisibilityChanged((activity, !_hiddenActivities.Contains(activity)))"
-                                        Icon="@Icons.Filled.Check"
-                                        Color="@Color.Default"
-                                        Title="Shown"
-                                        ToggledIcon="@Icons.Filled.HideSource"
-                                        ToggledColor="@Color.Error"
-                                        ToggledTitle="Hidden"/>
-                                </td>
-                            </tr>
-                        }
-                        </tbody>
-                    </table>
-                </MudCardContent>
-            </MudCard>
-            
             <MudCard Elevation="3" Class="mt-4">
                 <MudCardContent>
                     <MudButton StartIcon="@Icons.Filled.Save" Variant="Variant.Outlined" Class="mb-2" OnClick="SaveModel">Save to Models</MudButton><br />
@@ -169,7 +169,7 @@
     private async Task OnValidSubmit()
     {
         await UpdateGraph();
-        //UpdateTracesFreq();
+        UpdateTracesFreq();
     }
 
     private void FilterLog(double visiblePercentage)
@@ -193,7 +193,7 @@
                 Miner.Alpha => Alpha.MakePetriNet(new RelationMatrix(log))
                 };
         });
-        await _graph.RenderGraph(_petriNet, _changedColors);
+        await _graph.RenderGraph(new GraphvizNet(_petriNet), _changedColors);
         StateHasChanged();
     }
 
@@ -257,22 +257,22 @@
             }
         }
         _tracesDistinct = count;
-        //UpdateTracesFreq();
+        UpdateTracesFreq();
     }
     
-    // private void UpdateTracesFreq()
-    // {
-    //     if (_petriNet != null)
-    //     {
-    //         foreach (var transition in _petriNet.Transitions)
-    //         {
-    //             _activities[transition.Activity] = transition.Frequency;
-    //         }
-    //     }
-    //     _activities.Remove("<<start>>");
-    //     _activities.Remove("<<end>>");
-    //     _activities.Remove("");
-    // }
+    private void UpdateTracesFreq()
+    {
+        if (_petriNet != null)
+        {
+            foreach (var transition in _petriNet.Transitions.Where(t => !t.Invisible))
+            {
+                _activities[transition.Activity] = transition.Frequency;
+            }
+        }
+        _activities.Remove("<<start>>");
+        _activities.Remove("<<end>>");
+        _activities.Remove("");
+    }
 
     private void TransitionColorChanged((string, string) args)
     {
@@ -293,7 +293,10 @@
         {
             _hiddenActivities.Remove(activity);
         }
-        await UpdateGraph();
+        if (_petriNet is not null)
+        {
+            await UpdateGraph();
+        }
     }
 
 }
