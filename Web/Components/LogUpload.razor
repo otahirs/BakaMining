@@ -3,7 +3,6 @@
 @using ProcessM.NET.Import
 @using ProcessM.NET.Model
 @using ProcessM.NET.Model.DataAnalysis
-@using Transition = ProcessM.NET.Model.BasicPetriNet.Transition
 @inject Services.Storage.EventLogStore EventLogStore
 @inject IDialogService DialogService
 
@@ -60,7 +59,11 @@
                 Modified = _file.LastModified,
                 Size =  _file.Size
             },
-            EventLog = OrderByActivityFrequency(workflowLog)
+            EventLog = OrderByActivityFrequency(workflowLog),
+            Activity = _importedLog.Activity,
+            CaseId = _importedLog.CaseId,
+            Timestamp = _importedLog.Timestamp,
+            Key = _file.Name + _importedLog.Activity + _importedLog.CaseId + _importedLog.Timestamp
         };
         await EventLogStore.Add(logFile);
         await OnLogUploaded.InvokeAsync();

@@ -35,7 +35,7 @@ namespace BakaMining
                 dbStore.Stores.Add(new StoreSchema
                 {
                     Name = Enums.Storename.EventLogFile,
-                    PrimaryKey = new IndexSpec{Name="filename", KeyPath = "metadata.name", Auto=false},
+                    PrimaryKey = new IndexSpec{Name="key", KeyPath = "key", Auto=false},
                     
                 });
                 dbStore.Stores.Add(new StoreSchema

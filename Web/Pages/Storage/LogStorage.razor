@@ -11,6 +11,9 @@
     <thead>
         <tr>
             <th>Name</th>
+            <th>Activity</th>
+            <th>CaseId</th>
+            <th>Timestamp</th>
             <th>Mine</th>
             <th>Size</th>
             <th>Modified</th>
@@ -25,6 +28,15 @@
                     <MudText Typo="Typo.subtitle2">@logFile.Metadata.Name</MudText>
                 </td>
                 <td>
+                    <MudText>@logFile.Activity</MudText>
+                </td>
+                <td>
+                    <MudText>@logFile.CaseId</MudText>
+                </td>
+                <td>
+                    <MudText>@logFile.Timestamp</MudText>
+                </td>
+                <td>
                     <MudFab Icon="@Icons.Material.Outlined.PrecisionManufacturing" Size="Size.Small" Color="Color.Primary" OnClick='() => NavManager.NavigateTo("/Mine/" + logFile.Metadata.Name)'/>
                 </td>
                 <td>
@@ -34,7 +46,7 @@
                     <MudText Typo="Typo.subtitle2">@Utils.GetDateReadable(logFile.Metadata.Modified)</MudText>
                 </td>
                 <td>
-                    <MudFab Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" OnClick="() => RemoveLog(logFile.Metadata.Name)"/>
+                    <MudFab Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" OnClick="() => RemoveLog(logFile.Key)"/>
                 </td>
             </tr>
         }
@@ -54,9 +66,9 @@
         _logs = await EventLogStore.GetAll();
     }
 
-    private async Task RemoveLog(string logFileName)
+    private async Task RemoveLog(string key)
     {
-        await EventLogStore.Remove(logFileName);
+        await EventLogStore.Remove(key);
         await LoadLogs();
     }
 }
