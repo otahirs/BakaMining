@@ -37,7 +37,7 @@
                     <MudText>@logFile.Timestamp</MudText>
                 </td>
                 <td>
-                    <MudFab Icon="@Icons.Material.Outlined.PrecisionManufacturing" Size="Size.Small" Color="Color.Primary" OnClick='() => NavManager.NavigateTo("/Mine/" + logFile.Metadata.Name)'/>
+                    <MudFab Icon="@Icons.Material.Outlined.PrecisionManufacturing" Size="Size.Small" Color="Color.Primary" OnClick='() => NavManager.NavigateTo("/Mine/" + logFile.Key)'/>
                 </td>
                 <td>
                     <MudText Typo="Typo.subtitle2">@Utils.GetBytesReadable(logFile.Metadata.Size)</MudText>

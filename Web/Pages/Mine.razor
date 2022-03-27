@@ -1,5 +1,5 @@
 ﻿@page "/Mine"
-@page "/Mine/{Filename}"
+@page "/Mine/{Key}"
 @inject Services.Storage.EventLogStore EventLogStore
 @inject Services.Storage.PetriNetStore PetriNetStore
 @using ProcessM.NET.Discovery.HeuristicMiner
@@ -11,7 +11,7 @@
 @using ProcessM.NET.Model.GraphvizNet
 @inject IBlazorDownloadFileService DownloadFileService
 
-@if (string.IsNullOrEmpty(Filename))
+@if (string.IsNullOrEmpty(Key))
 {
     <MudAlert Severity="Severity.Info">Go to <MudLink Href="/">Logs</MudLink> to select a file to mine.</MudAlert>
     return;
@@ -145,7 +145,9 @@
 
 @code {
     [Parameter]
-    public string Filename { get; set; }
+    public string Key { get; set; }
+
+    private string _filename;
 
     private bool overlayActive = false;
     private Graph _graph { get; set; } = new();
@@ -173,11 +175,12 @@
     {
         if (firstRender)
         {
-            if (string.IsNullOrEmpty(Filename))
+            if (string.IsNullOrEmpty(Key))
             {
                 return;
             }
-            var logFile = await EventLogStore.Get(Filename);
+            var logFile = await EventLogStore.Get(Key);
+            _filename = logFile.Metadata.Name;
             _log = _source_log = logFile.EventLog;
             _tracesMax = _tracesVisible = _log.WorkflowTraces.Count;
             UpdateTraces();
@@ -237,7 +240,7 @@
             {
                 Modified = DateTimeOffset.Now,
                 Size =  System.Text.Encoding.UTF8.GetBytes(PNMLExport.Serialize(_petriNet)).Length,
-                Name = Filename.Substring(0, Filename.Length - 4)
+                Name = _filename.Substring(0, _filename.Length - 4)
             }
         };
         await PetriNetStore.Add(petriNetFile);
@@ -246,13 +249,13 @@
     private async Task DownloadPNML()
     {
         var file = System.Text.Encoding.UTF8.GetBytes(PNMLExport.Serialize(_petriNet));
-        await DownloadFileService.DownloadFileAsync(Filename.Substring(0, Filename.Length - 3) + "pnml", file);
+        await DownloadFileService.DownloadFileAsync(_filename.Substring(0, _filename.Length - 3) + "pnml", file);
     }
     
     private async Task DownloadDOT()
     {
         var file = System.Text.Encoding.UTF8.GetBytes(DOTExport.Serialize(_petriNet));
-        await DownloadFileService.DownloadFileAsync(Filename.Substring(0, Filename.Length - 3)  + "dot", file);
+        await DownloadFileService.DownloadFileAsync(_filename.Substring(0, _filename.Length - 3)  + "dot", file);
     }
 
     private void UpdateTraces()
