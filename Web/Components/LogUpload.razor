@@ -8,7 +8,15 @@
 
 
 <MudAlert Severity="Severity.Warning" Class="mb-4">Not suitable for large logs - thousands of lines - they take very long time to process.</MudAlert>
-<MudAlert Severity="Severity.Info" Class="my-4">Import expects .csv file with one header row, separator <code>{';', ',', '|', '\t', ','}</code> detected automaticaly.</MudAlert>
+<MudAlert Severity="Severity.Info" Class="my-4">
+    Import expects .csv file with one header row, separator <code>{';', ',', '|', '\t', ','}</code> detected automaticaly. <br/>
+    Example logs can be found <a href="https://github.com/otahirs/ProcessM.NET/tree/master/ProcessM.NET-tests/Files" target="_blank">here</a>.
+</MudAlert>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <MudAlert Severity="Severity.Error">File upload failed, see console for details. Truncated error follows: <br/> @_error</MudAlert>
+}
 <InputFile id="fileInput" OnChange="OnFileSelected" hidden accept=".csv"/>
 
 <MudButton HtmlTag="label"
@@ -28,23 +36,38 @@
     
     ImportedEventLog _importedLog;
     IBrowserFile _file;
+    string _error;
 
     private async void OnFileSelected(InputFileChangeEventArgs e)
     {
-        foreach (var f in e.GetMultipleFiles())
+        _error = null;
+        try
         {
-            _file = f;
-            await using var memoryString = new MemoryStream();
-            await _file.OpenReadStream(1000000000).CopyToAsync(memoryString);
-            memoryString.Seek(0, SeekOrigin.Begin);
-            _importedLog = CSVImport.MakeDataFrame(memoryString);
+            foreach (var f in e.GetMultipleFiles())
+            {
+                _file = f;
+                await using var memoryString = new MemoryStream();
+                await _file.OpenReadStream(1000000000).CopyToAsync(memoryString);
+                memoryString.Seek(0, SeekOrigin.Begin);
+                _importedLog = CSVImport.MakeDataFrame(memoryString);
+            }
+            var result = await DialogService.Show<DialogLogProperties>(
+                "Set Activity & CaseId",
+                new DialogParameters { ["Log"] = _importedLog },
+                new DialogOptions { DisableBackdropClick = true, CloseButton = true }
+                ).Result;
+            if (!result.Cancelled)
+            {
+                UploadLog();
+            }
         }
-        await DialogService.Show<DialogLogProperties>(
-            "Set Activity & CaseId", 
-            new DialogParameters { ["Log"]=_importedLog },
-            new DialogOptions { DisableBackdropClick = true }
-            ).Result;
-        UploadLog();
+        catch (Exception exception)
+        {
+            Console.WriteLine(exception.Message);
+            _error = exception.Message.Substring(0, Math.Min(exception.Message.Length, 2048));
+            StateHasChanged();
+        }
+       
     }
 
     private async void UploadLog()
