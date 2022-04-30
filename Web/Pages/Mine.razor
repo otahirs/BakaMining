@@ -64,7 +64,7 @@
                         </MudTooltip>
                         @if (_minerSettings.AllTasksConnected)
                         {
-                            <MudTooltip Text="Apart from the best candidate, also allow arcs which dependency value that does not differ more from the best candidate than the relative-to-best value">
+                            <MudTooltip Text="Apart from the best candidate, also allow arcs where the dependency value does not differ more from the best candidate than the relative-to-best value.">
                                 <MudNumericField T="double" Label="Relative to best modifier" Min="0" Max="1" Step="0.05" Format="N2" HelperText="Relative to best threshold modifier <0,1>" HelperTextOnFocus="true"
                                                  @bind-Value="_minerSettings.RelativeToBestThreshold" For="@(() => _minerSettings.RelativeToBestThreshold)"/>
                             </MudTooltip>
