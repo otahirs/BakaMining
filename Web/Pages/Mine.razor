@@ -44,32 +44,32 @@
                     }
                     @if (_selectedMiner == Miner.Heuristic)
                     {
-                        <MudTooltip Text="Dependency measure between two activities in one direction is expressed as a number between 0 and 1. By setting the thresholds , we specify which arcs between activities to show. Setting thresholds to 0 preserves all arcs. Values between (0,1> filters some arcs which might be mined due to noise in the log, only arcs with dependency value surpassing the threshold will be displayed. ">
+                        <MudTooltip Text="Dependency measure between two activities a ⇒ b is calculated as a number between 0 and 1. Dependency value of zero -> no relation. Closer to one -> arc is present. We preserve only arcs that surpass the given threshold.">
                             <MudChip Variant="Variant.Text" Icon="@Icons.Outlined.Lightbulb">thresholds</MudChip>
                         </MudTooltip>
                         <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small">
                             <MudButton OnClick="@(() => _minerSettings = new HeuristicMinerSettings())">Defaults</MudButton>
                             <MudButton OnClick="@(() => _minerSettings = new HeuristicMinerSettings { DependencyThreshold = 0, L1LThreshold = 0, L2LThreshold = 0})">All arcs</MudButton>
                         </MudButtonGroup>
-                        <MudNumericField T="double" Label="Direct dependency (a ⇒ b) " HelperText="Absolute dependency threshold <0,1>" Min="0" Max="1" Step="0.05" Format="N2" HelperTextOnFocus="true"
+                        <MudNumericField T="double" Label="Direct dependency (a ⇒ b) " HelperText="Default threshold <0,1>" Min="0" Max="1" Step="0.05" Format="N2" HelperTextOnFocus="true"
                                          @bind-Value="_minerSettings.DependencyThreshold" For="@(() => _minerSettings.DependencyThreshold)"/>
-                        <MudNumericField T="double" Label="Self loop (a ⇒ a)" HelperText="Length loop 1 dependency threshold <0,1>" Min="0" Max="1" Step="0.05" Format="N2" HelperTextOnFocus="true"
+                        <MudNumericField T="double" Label="Self loop (a ⇒ a)" HelperText="Threshold for length 1 loops <0,1>" Min="0" Max="1" Step="0.05" Format="N2" HelperTextOnFocus="true"
                                          @bind-Value="_minerSettings.L1LThreshold" For="@(() => _minerSettings.L1LThreshold)"/>
-                        <MudNumericField T="double" Label="Loop length 2 (a ⇒ b ⇒ a)" HelperText="Length 2 loop dependency threshold <0,1>" Min="0" Max="1" Step="0.05" Format="N2" HelperTextOnFocus="true"
+                        <MudNumericField T="double" Label="Loop length 2 (a ⇒ b ⇒ a)" HelperText="Threshold for length 2 loops <0,1>" Min="0" Max="1" Step="0.05" Format="N2" HelperTextOnFocus="true"
                                          @bind-Value="_minerSettings.L2LThreshold" For="@(() => _minerSettings.L2LThreshold)"/>
                         <br/>
-                        <MudTooltip Text="Ensure each activity has at least one in and one out arcs">
+                        <MudTooltip Text="Ensure each activity has at least one in and one out arcs, even if the default threshold is not met. Candidate with the biggest dependency value is selected.">
                             <MudSwitch Color="Color.Primary" Label="All tasks connected"
                                        @bind-Checked="_minerSettings.AllTasksConnected" For="@(() => _minerSettings.AllTasksConnected)"/>
                         </MudTooltip>
                         @if (_minerSettings.AllTasksConnected)
                         {
-                            <MudTooltip Text="Apart from the arcs exceeding Absolute dependency threshold, we also accept arcs with dependency value over threshold consisting of: best dependency value of arc coming to or from an activity, plus the relative-to-best threshold modifier">
+                            <MudTooltip Text="Apart from the best candidate, also allow arcs which dependency value that does not differ more from the best candidate than the relative-to-best value">
                                 <MudNumericField T="double" Label="Relative to best modifier" Min="0" Max="1" Step="0.05" Format="N2" HelperText="Relative to best threshold modifier <0,1>" HelperTextOnFocus="true"
                                                  @bind-Value="_minerSettings.RelativeToBestThreshold" For="@(() => _minerSettings.RelativeToBestThreshold)"/>
                             </MudTooltip>
                         }
-                        <MudTooltip Text="Try to find long distance dependencies with indirect relation between tasks. Find pairs of tasks with similar frequencies in which the first task is directly or indirectly followed by the second one.">
+                        <MudTooltip Text="Try to find long distance dependencies. Add dependencies that originate from choice made earlier in the process model.">
                             <MudSwitch Color="Color.Primary" Label="Long distance dependencies"
                                        @bind-Checked="_minerSettings.UseLongDistance" For="@(() => _minerSettings.UseLongDistance)"/>
                         </MudTooltip>
