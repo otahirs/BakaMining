@@ -32,7 +32,9 @@ window.InitGraph = (element, csharpObjectRef) => {
                 let polygon = t.querySelector('polygon');
                 text.setAttribute("pointer-events", "none");
                 title.setAttribute("pointer-events", "none");
-                polygon.classList.add('hasContextMenu');
+                if (!["<<start>>", "<<end>>"].includes(t.id)) {
+                    polygon.classList.add('hasContextMenu');
+                }
             });
 
             rebuildContextMenu();
