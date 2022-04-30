@@ -78,3 +78,8 @@ const rebuildContextMenu = () => {
     ]);
     window.contextMenu.connect();
 }
+
+
+window.ResetZoom = async () => {
+    window.graphviz.resetZoom();
+}
