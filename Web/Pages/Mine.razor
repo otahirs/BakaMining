@@ -97,34 +97,30 @@
             </MudCardContent>
         </MudCard>
         <MudExpansionPanels>
-            <MudExpansionPanel Text="Transition filter"  Class="mud-elevation-3 mt-4">
-                <table>
-                    <thead>
-                    <tr><td><b>activity</b></td><td><b>visible</b></td></tr>
-                    </thead>
-                    <tbody>
-                    @foreach (var (activity, freq) in _activities)
-                    {
-                        <tr>
-                            <td>@activity
-                                @if (_selectedMiner == Miner.Heuristic)
-                                {<span>(@freq)</span>}
-                            </td>
-                            <td>
-                                <MudToggleIconButton
-                                    Toggled="_hiddenActivities.Contains(activity)"
-                                    ToggledChanged="() => TransitionVisibilityChanged((activity, !_hiddenActivities.Contains(activity)))"
-                                    Icon="@Icons.Filled.Check"
-                                    Color="@Color.Default"
-                                    Title="Shown"
-                                    ToggledIcon="@Icons.Filled.HideSource"
-                                    ToggledColor="@Color.Error"
-                                    ToggledTitle="Hidden"/>
-                            </td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
+            <MudExpansionPanel Text="Transition filter" Class="mud-elevation-3 mt-4">
+                <MudTable Items="_activities" Bordered="false" Dense="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>activity</MudTh>
+                        @if (_selectedMiner == Miner.Heuristic)
+                        {<MudTh>frequency</MudTh>}
+                        <MudTh>visible</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="activity">@context.Key</MudTd>
+                        <MudTd DataLabel="frequency">@context.Value</MudTd>
+                        <MudTd DataLabel="visible">
+                            <MudToggleIconButton
+                                Toggled="_hiddenActivities.Contains(context.Key)"
+                                ToggledChanged="() => TransitionVisibilityChanged((context.Key, !_hiddenActivities.Contains(context.Key)))"
+                                Icon="@Icons.Filled.Check"
+                                Color="@Color.Default"
+                                Title="Shown"
+                                ToggledIcon="@Icons.Filled.HideSource"
+                                ToggledColor="@Color.Error"
+                                ToggledTitle="Hidden"/>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
             </MudExpansionPanel>
         </MudExpansionPanels>
         @if (_petriNet != null)
