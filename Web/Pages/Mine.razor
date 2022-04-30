@@ -88,13 +88,13 @@
                 </EditForm>
             </MudCardContent>
         </MudCard>
-        <MudCard Elevation="3" Class="mt-4">
+        <MudCard Elevation="0" Class="mt-4">
             <MudCardContent>
                 <MudSwitch Color="Color.Primary" T="bool" Label="Simplify graph"  Checked="_simplifyGraph" CheckedChanged="SimplifyChanged" />
             </MudCardContent>
         </MudCard>
-        <MudExpansionPanels>
-            <MudExpansionPanel Text="Transition filter" Class="mud-elevation-3 mt-4">
+        <MudExpansionPanels Elevation="0">
+            <MudExpansionPanel Text="Transition filter" Class="mt-4">
                 <MudTable Items="_activities" Bordered="false" Dense="true" Elevation="0">
                     <HeaderContent>
                         <MudTh>activity</MudTh>
@@ -122,11 +122,11 @@
         </MudExpansionPanels>
         @if (_petriNet != null)
         {
-            <MudCard Elevation="3" Class="mt-4">
+            <MudCard Elevation="0" Class="mt-4">
                 <MudCardContent>
-                    <MudButton StartIcon="@Icons.Filled.Save" Variant="Variant.Outlined" Class="mb-2" OnClick="SaveModel">Save to Models</MudButton><br />
-                    <MudButton StartIcon="@Icons.Filled.Download" Variant="Variant.Outlined" OnClick="DownloadPNML">PNML</MudButton>
-                    <MudButton StartIcon="@Icons.Filled.Download" Variant="Variant.Outlined" OnClick="DownloadDOT">DOT</MudButton>
+                    <MudButton StartIcon="@Icons.Filled.Save" Variant="Variant.Outlined" Style="border: none" Class="mb-2" OnClick="SaveModel">Save to Models</MudButton><br />
+                    <MudButton StartIcon="@Icons.Filled.Download" Variant="Variant.Outlined" Style="border: none" OnClick="DownloadPNML">PNML</MudButton>
+                    <MudButton StartIcon="@Icons.Filled.Download" Variant="Variant.Outlined" Style="border: none" OnClick="DownloadDOT">DOT</MudButton>
                 </MudCardContent>
             </MudCard>
         }
