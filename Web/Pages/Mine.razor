@@ -96,9 +96,8 @@
                 <MudSwitch Color="Color.Primary" T="bool" Label="Simplify graph"  Checked="_simplifyGraph" CheckedChanged="SimplifyChanged" />
             </MudCardContent>
         </MudCard>
-        <MudCard Elevation="3" Class="mt-4">
-            <MudCardContent>
-                <h3>Filter transitions</h3>
+        <MudExpansionPanels>
+            <MudExpansionPanel Text="Transition filter"  Class="mud-elevation-3 mt-4">
                 <table>
                     <thead>
                     <tr><td><b>activity</b></td><td><b>visible</b></td></tr>
@@ -107,7 +106,10 @@
                     @foreach (var (activity, freq) in _activities)
                     {
                         <tr>
-                            <td>@activity @if(_selectedMiner == Miner.Heuristic) {<span>(@freq)</span>}</td>
+                            <td>@activity
+                                @if (_selectedMiner == Miner.Heuristic)
+                                {<span>(@freq)</span>}
+                            </td>
                             <td>
                                 <MudToggleIconButton
                                     Toggled="_hiddenActivities.Contains(activity)"
@@ -123,8 +125,8 @@
                     }
                     </tbody>
                 </table>
-            </MudCardContent>
-        </MudCard>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
         @if (_petriNet != null)
         {
             <MudCard Elevation="3" Class="mt-4">
@@ -183,8 +185,8 @@
             _filename = logFile.Metadata.Name;
             _log = _source_log = logFile.EventLog;
             _tracesMax = _tracesVisible = _log.WorkflowTraces.Count;
+            await UpdateGraph();
             UpdateTraces();
-            StateHasChanged();
         }
     }
     
