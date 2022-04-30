@@ -16,11 +16,8 @@
     <MudAlert Severity="Severity.Info">Go to <MudLink Href="/">Logs</MudLink> to select a file to mine.</MudAlert>
     return;
 }
-<MudGrid>
-    <MudItem xs="12">
-        
-    </MudItem>
-    <MudItem xs="10" Style="background-color: white; height: 80vh">
+<MudGrid Style="height: calc(99vh - var(--mud-appbar-height));" Class="m-2">
+    <MudItem xl="10" lg="9" xs="8" Style="background-color: white; height: 100%;">
         <MudPaper Elevation="0" Style="height: 100%">
             <Graph 
                 @ref="_graph" 
@@ -29,8 +26,8 @@
                 OnRenderingFinished="RemoveOverlay" />
         </MudPaper>
     </MudItem>
-    <MudItem xs="2">
-        <MudCard Elevation="3">
+    <MudItem xl="2" lg="3" xs="4" Style="height: 100%; overflow-y: auto">
+            <MudCard Elevation="3">
             <MudCardContent>
                 <EditForm Model="@_minerSettings" OnValidSubmit="OnValidSubmit">
                     <DataAnnotationsValidator/>
