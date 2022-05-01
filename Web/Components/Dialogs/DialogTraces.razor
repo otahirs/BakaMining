@@ -1,0 +1,37 @@
+﻿@using ProcessM.NET.Model.DataAnalysis
+@using ProcessM.NET.ConformanceChecking.Alignments
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @MudDialog.Title
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudContainer Style="max-height: 70vh; overflow-y: scroll">
+            <MudTable Items="Traces" Bordered="false" Dense="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>frequency</MudTh>
+                    <MudTh>fitness</MudTh>
+                    <MudTh>trace</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    @{
+                        var (trace, (alignment,freq)) = context;
+                    }
+                    <MudTd DataLabel="frequency">@freq</MudTd>
+                    <MudTd DataLabel="fitness">@($"{alignment.Fitness:0.00}")</MudTd>
+                    <MudTd DataLabel="trace">&lt;@string.Join(", ", trace.Activities.Where(t => t != "<<start>>" && t != "<<end>>"))&gt;</MudTd>Size=""Size."e
+                </RowTemplate>
+            </MudTable>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public Dictionary<WorkflowTrace, Tuple<AlignmentOnTrace, int>> Traces { get; set; } = new();
+}

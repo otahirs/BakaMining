@@ -98,12 +98,12 @@
     }
     
     [Parameter]
-    public EventCallback<(string, bool)> OnTransitionVisibilityChanged { get; set; }
+    public EventCallback<Tuple<string, bool>> OnTransitionVisibilityChanged { get; set; }
     
     [JSInvokable]
     public async Task HideTransition(string activity)
     {
-        await OnTransitionVisibilityChanged.InvokeAsync((activity, true));
+        await OnTransitionVisibilityChanged.InvokeAsync(Tuple.Create(activity, true));
     }
 
     

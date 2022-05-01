@@ -8,28 +8,31 @@
 @using ProcessM.NET.Model.BasicPetriNet
 @using ProcessM.NET.Model.DataAnalysis
 @using Blazor.DownloadFileFast.Interfaces
+@using ProcessM.NET.ConformanceChecking.Alignments
 @using ProcessM.NET.Model.GraphvizNet
+@using BakaMining.Components.Dialogs
 @inject IBlazorDownloadFileService DownloadFileService
+@inject IDialogService DialogService
 
 @if (string.IsNullOrEmpty(Key))
 {
     <MudAlert Severity="Severity.Info">Go to <MudLink Href="/">Logs</MudLink> to select a file to mine.</MudAlert>
     return;
 }
-<MudGrid Style="height: calc(99vh - var(--mud-appbar-height));" Class="m-2">
-    <MudItem xl="10" lg="9" xs="8" Style="background-color: white; height: 100%;">
-        <MudPaper Elevation="0" Style="height: 100%">
-            <Graph 
-                @ref="_graph" 
-                OnTransitionColorChanged="TransitionColorChanged" 
+<MudGrid Style="height: calc(99vh - var(--mud-appbar-height));">
+    <MudItem xl="10" lg="9" xs="8" Style="display: flex; flex-direction: column;height: 100%;">
+        <MudPaper Elevation="0" Style="flex-grow: 1; height: 0;" Class="pa-2">
+            <Graph
+                @ref="_graph"
+                OnTransitionColorChanged="TransitionColorChanged"
                 OnTransitionVisibilityChanged="TransitionVisibilityChanged"
-                OnRenderingFinished="RemoveOverlay" />
+                OnRenderingFinished="RemoveOverlay"/>
         </MudPaper>
     </MudItem>
     <MudItem xl="2" lg="3" xs="4" Style="height: 100%; overflow-y: auto">
-            <MudCard Elevation="3">
+        <MudCard Elevation="3">
             <MudCardContent>
-                <EditForm Model="@_minerSettings" OnValidSubmit="OnValidSubmit">
+                <EditForm Model="@_minerSettings" OnValidSubmit="UpdateGraph">
                     <DataAnnotationsValidator/>
                     <MudText Typo="Typo.h3">Miner</MudText>
                     <MudSelect T="Miner" Label="Miner implementation" AnchorOrigin="Origin.BottomCenter" @bind-Value=@_selectedMiner Class="mb-4">
@@ -45,81 +48,79 @@
                     @if (_selectedMiner == Miner.Heuristic)
                     {
                         <MudTooltip Text="Dependency measure between two activities a ⇒ b is calculated as a number between 0 and 1. Dependency value of zero -> no relation. Closer to one -> arc is present. We preserve only arcs that surpass the given threshold.">
-                            <MudChip Variant="Variant.Text" Icon="@Icons.Outlined.Lightbulb">thresholds</MudChip>
+                            <MudChip Variant="Variant.Text" Icon="@Icons.Outlined.Lightbulb">dependency thresholds</MudChip>
                         </MudTooltip>
                         <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small">
                             <MudButton OnClick="@(() => _minerSettings = new HeuristicMinerSettings())">Defaults</MudButton>
                             <MudButton OnClick="@(() => _minerSettings = new HeuristicMinerSettings { DependencyThreshold = 0, L1LThreshold = 0, L2LThreshold = 0})">All arcs</MudButton>
                         </MudButtonGroup>
-                        <MudNumericField T="double" Label="Direct dependency (a ⇒ b) " HelperText="Default threshold <0,1>" Min="0" Max="1" Step="0.05" Format="N2" HelperTextOnFocus="true"
+                        <MudNumericField T="double" Label="Direct (a ⇒ b) " Min="0" Max="1" Step="0.05" Format="N2" Variant="Variant.Outlined"
                                          @bind-Value="_minerSettings.DependencyThreshold" For="@(() => _minerSettings.DependencyThreshold)"/>
-                        <MudNumericField T="double" Label="Self loop (a ⇒ a)" HelperText="Threshold for length 1 loops <0,1>" Min="0" Max="1" Step="0.05" Format="N2" HelperTextOnFocus="true"
+                        <MudNumericField T="double" Label="Loop length 1 (a ⇒ a)" Min="0" Max="1" Step="0.05" Format="N2" Variant="Variant.Outlined"
                                          @bind-Value="_minerSettings.L1LThreshold" For="@(() => _minerSettings.L1LThreshold)"/>
-                        <MudNumericField T="double" Label="Loop length 2 (a ⇒ b ⇒ a)" HelperText="Threshold for length 2 loops <0,1>" Min="0" Max="1" Step="0.05" Format="N2" HelperTextOnFocus="true"
+                        <MudNumericField T="double" Label="Loop len. 2 (a ⇒ b ⇒ a)" Min="0" Max="1" Step="0.05" Format="N2" Variant="Variant.Outlined"
                                          @bind-Value="_minerSettings.L2LThreshold" For="@(() => _minerSettings.L2LThreshold)"/>
                         <br/>
                         <MudTooltip Text="Ensure each activity has at least one in and one out arcs, even if the default threshold is not met. Candidate with the biggest dependency value is selected.">
-                            <MudSwitch Color="Color.Primary" Label="All tasks connected"
+                            <MudSwitch Color="Color.Primary" Label="All connected"
                                        @bind-Checked="_minerSettings.AllTasksConnected" For="@(() => _minerSettings.AllTasksConnected)"/>
                         </MudTooltip>
                         @if (_minerSettings.AllTasksConnected)
                         {
-                            <MudTooltip Text="Apart from the best candidate, also allow arcs where the dependency value does not differ more from the best candidate than the relative-to-best value.">
-                                <MudNumericField T="double" Label="Relative to best modifier" Min="0" Max="1" Step="0.05" Format="N2" HelperText="Relative to best threshold modifier <0,1>" HelperTextOnFocus="true"
+                            <MudTooltip Text="Apart from the best candidate, also allow arcs where the dependency value does not differ from the best candidate more than the relative-to-best value.">
+                                <MudNumericField T="double" Label="Relative to best modifier" Min="0" Max="1" Step="0.05" Format="N2" Variant="Variant.Outlined"
                                                  @bind-Value="_minerSettings.RelativeToBestThreshold" For="@(() => _minerSettings.RelativeToBestThreshold)"/>
                             </MudTooltip>
                         }
                         <MudTooltip Text="Try to find long distance dependencies. Add dependencies that originate from choice made earlier in the process model.">
-                            <MudSwitch Color="Color.Primary" Label="Long distance dependencies"
+                            <MudSwitch Color="Color.Primary" Label="Long distance"
                                        @bind-Checked="_minerSettings.UseLongDistance" For="@(() => _minerSettings.UseLongDistance)"/>
                         </MudTooltip>
                         @if (_minerSettings.UseLongDistance)
                         {
                             <MudTooltip>
-                                <MudNumericField T="double" Label="Long distance (a {⇒}* b)" Min="0" Max="1" Step="0.05" Format="N2" HelperText="Long distance threshold <0,1>" HelperTextOnFocus="true"
+                                <MudNumericField T="double" Label="Long distance (a {⇒}* b)" Min="0" Max="1" Step="0.05" Format="N2" Variant="Variant.Outlined"
                                                  @bind-Value="_minerSettings.LongDistanceThreshold" For="@(() => _minerSettings.LongDistanceThreshold)"/>
                             </MudTooltip>
                         }
                         
                     }
-                    <MudSlider T="double" Value="_slider" ValueChanged="FilterLog" Min="0" Max="100" Step="0.05">traces: @_tracesVisible / @_tracesMax (dist. @_tracesDistinct)</MudSlider>
-                    <br />
                     <MudButton ButtonType="ButtonType.Submit" FullWidth="true" Variant="Variant.Filled" Color="Color.Primary" Class="mt-2">Mine</MudButton>
                 </EditForm>
             </MudCardContent>
         </MudCard>
-        <MudCard Elevation="0" Class="mt-4">
+        <MudCard Elevation="0" Class="my-4">
             <MudCardContent>
-                <MudSwitch Color="Color.Primary" T="bool" Label="Simplify graph"  Checked="_simplifyGraph" CheckedChanged="SimplifyChanged" />
+                <MudSlider T="double" Value="_slider" Variant="Variant.Filled" @onmouseup="UpdateGraph" ValueChanged="FilterLog" Min="0" Max="100" Step="0.05">
+                    Traces: @_tracesVisible / @_tracesMax <br/>
+                    Distinct: @_tracesDistinct
+                </MudSlider>
             </MudCardContent>
         </MudCard>
-        <MudExpansionPanels Elevation="0">
-            <MudExpansionPanel Text="Transition filter" Class="mt-4">
-                <MudTable Items="_activities" Bordered="false" Dense="true" Elevation="0">
-                    <HeaderContent>
-                        <MudTh>activity</MudTh>
-                        @if (_selectedMiner == Miner.Heuristic)
-                        {<MudTh>frequency</MudTh>}
-                        <MudTh>visible</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="activity">@context.Key</MudTd>
-                        <MudTd DataLabel="frequency">@context.Value</MudTd>
-                        <MudTd DataLabel="visible">
-                            <MudToggleIconButton
-                                Toggled="_hiddenActivities.Contains(context.Key)"
-                                ToggledChanged="() => TransitionVisibilityChanged((context.Key, !_hiddenActivities.Contains(context.Key)))"
-                                Icon="@Icons.Filled.Check"
-                                Color="@Color.Default"
-                                Title="Shown"
-                                ToggledIcon="@Icons.Filled.HideSource"
-                                ToggledColor="@Color.Error"
-                                ToggledTitle="Hidden"/>
-                        </MudTd>
-                    </RowTemplate>
-                </MudTable>
-            </MudExpansionPanel>
-        </MudExpansionPanels>
+        <MudCard Elevation="0" Class="my-4">
+            <MudCardContent>
+            @if (_alignmentFitness < 0)
+            {
+                <MudAlert Severity="Severity.Warning">All tasks are not connected, cannot compute fitness</MudAlert>
+            }
+            else
+            {
+                <MudText Typo="Typo.body1">Fitness: @string.Format("{0:0.00}", _alignmentFitness * 100) %</MudText>
+                <MudProgressLinear Color="Color.Info" Size="Size.Small" Min="0" Max="1" Value="@_alignmentFitness" Class="my-4"/>
+            }
+            </MudCardContent>
+        </MudCard>
+        <MudCard Elevation="0" Class="my-4">
+            <MudCardContent>
+                <MudButton OnClick="ShowTracesDialog" EndIcon="@Icons.Filled.Tab">Traces</MudButton>
+                <MudButton OnClick="ShowTransitionsDialog" EndIcon="@Icons.Filled.Tab">Transitions</MudButton>
+            </MudCardContent>
+        </MudCard>
+        <MudCard Elevation="0" Class="my-4">
+            <MudCardContent>
+                <MudSwitch Color="Color.Primary" T="bool" Label="Simplify graph" Checked="_simplifyGraph" CheckedChanged="SimplifyChanged" />
+            </MudCardContent>
+        </MudCard>
         @if (_petriNet != null)
         {
             <MudCard Elevation="0" Class="mt-4">
@@ -131,7 +132,6 @@
             </MudCard>
         }
     </MudItem>
-    
 </MudGrid>
 
 <MudOverlay @bind-Visible="overlayActive" DarkBackground="true">
@@ -144,18 +144,20 @@
 
     private string _filename;
 
-    private bool overlayActive = false;
+    private bool overlayActive = true;
     private Graph _graph { get; set; } = new();
     private WorkflowLog _source_log { get; set; }
     private WorkflowLog _log { get; set; }
     private HeuristicMinerSettings _minerSettings = new();
     private Miner _selectedMiner = Miner.Heuristic;
     private PetriNet _petriNet;
+    private Dictionary<WorkflowTrace, Tuple<AlignmentOnTrace, int>> _traces = new();
     private int _tracesMax;
     private int _tracesVisible;
     private int _tracesDistinct;
     private double _slider = 100;
     private bool _simplifyGraph = true;
+    private double _alignmentFitness = 0;
     private Dictionary<string, int> _activities = new();
     private HashSet<string> _hiddenActivities = new();
     private Dictionary<string, string> _changedColors = new();
@@ -179,14 +181,7 @@
             _log = _source_log = logFile.EventLog;
             _tracesMax = _tracesVisible = _log.WorkflowTraces.Count;
             await UpdateGraph();
-            UpdateTraces();
         }
-    }
-    
-    private async Task OnValidSubmit()
-    {
-        await UpdateGraph();
-        UpdateTracesFreq();
     }
 
     private void FilterLog(double visiblePercentage)
@@ -209,6 +204,8 @@
                 Miner.Heuristic => HeuristicMiner.MinePetriNet(log, _minerSettings),
                 Miner.Alpha => Alpha.MakePetriNet(new RelationMatrix(log))
                 };
+            UpdateTraces();
+            ComputeFitness(log, _petriNet);
         });
         await _graph.RenderGraph(new GraphvizNet(_petriNet), _changedColors);
         StateHasChanged();
@@ -298,7 +295,7 @@
         _changedColors[transitionId] = newColor;
     }
 
-    private async Task TransitionVisibilityChanged((string, bool) args)
+    private async Task TransitionVisibilityChanged(Tuple<string, bool> args)
     {
         var activity = args.Item1;
         var hidden = args.Item2;
@@ -314,6 +311,55 @@
         {
             await UpdateGraph();
         }
+    }
+
+    private void ComputeFitness(WorkflowLog log, PetriNet  petriNet)
+    {
+        double optimalAlignments = 0;
+        double worstAlignments = 0;
+        try
+        {
+            _traces = AlignmentUtils.OptimalAlignmentsOnLog(log, petriNet);
+            foreach (var (trace, (alignment, freq)) in _traces)
+            {
+                optimalAlignments += freq * alignment.OptimalCost;
+                worstAlignments += freq * alignment.WorstCost;
+            }
+            _alignmentFitness = 1 - optimalAlignments / worstAlignments;
+        }
+        catch (ArgumentException)
+        {
+            _alignmentFitness = -1;
+        }
+
+    }
+
+    private void ShowTracesDialog()
+    {
+        DialogService.Show<DialogTraces>("Traces", 
+            new DialogParameters
+        {
+            ["Traces"] = _traces
+        }, new DialogOptions
+        {
+            CloseButton = true,
+            FullWidth = true
+        });
+    }
+
+    // dialog parameters require manually created callback
+    private EventCallback<Tuple<string,bool>> TransitionVisibilityChangedHandler => new(this, (Action<Tuple<string,bool>>)(async (args) =>
+    { await TransitionVisibilityChanged(args); }));
+    
+    private void ShowTransitionsDialog()
+    {
+        var parameters = new DialogParameters
+        {
+            { "Transitions", _activities },
+            { "HiddenTransitions", _hiddenActivities },
+            { "OnTransitionVisibilityChanged", TransitionVisibilityChangedHandler }
+        };
+        DialogService.Show<DialogTransitions>("Activities / Transitions",  parameters, new DialogOptions{ CloseButton = true, FullWidth = true });
     }
 
 }
