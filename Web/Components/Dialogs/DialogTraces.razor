@@ -21,7 +21,7 @@
                     }
                     <MudTd DataLabel="frequency">@freq</MudTd>
                     <MudTd DataLabel="fitness">@($"{alignment.Fitness:0.00}")</MudTd>
-                    <MudTd DataLabel="trace">&lt;@string.Join(", ", trace.Activities.Where(t => t != "<<start>>" && t != "<<end>>"))&gt;</MudTd>Size=""Size."e
+                    <MudTd DataLabel="trace">&lt;@string.Join(", ", trace.Activities.Where(t => t != "<<start>>" && t != "<<end>>"))&gt;</MudTd>
                 </RowTemplate>
             </MudTable>
         </MudContainer>
