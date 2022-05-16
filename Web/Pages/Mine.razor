@@ -112,8 +112,8 @@
         </MudCard>
         <MudCard Elevation="0" Class="my-4">
             <MudCardContent>
+                <MudButton OnClick="ShowTransitionsDialog" EndIcon="@Icons.Filled.Tab">Activities</MudButton>
                 <MudButton OnClick="ShowTracesDialog" EndIcon="@Icons.Filled.Tab">Traces</MudButton>
-                <MudButton OnClick="ShowTransitionsDialog" EndIcon="@Icons.Filled.Tab">Transitions</MudButton>
             </MudCardContent>
         </MudCard>
         <MudCard Elevation="0" Class="my-4">
@@ -359,7 +359,7 @@
             { "HiddenTransitions", _hiddenActivities },
             { "OnTransitionVisibilityChanged", TransitionVisibilityChangedHandler }
         };
-        DialogService.Show<DialogTransitions>("Activities / Transitions",  parameters, new DialogOptions{ CloseButton = true, FullWidth = true });
+        DialogService.Show<DialogTransitions>("Activities",  parameters, new DialogOptions{ CloseButton = true, FullWidth = true });
     }
 
 }
