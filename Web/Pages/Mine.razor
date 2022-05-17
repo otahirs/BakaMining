@@ -134,7 +134,7 @@
     </MudItem>
 </MudGrid>
 
-<MudOverlay @bind-Visible="overlayActive" DarkBackground="true">
+<MudOverlay @bind-Visible="_overlayActive" DarkBackground="true">
     <MudText Typo="Typo.h1">Computation in progress</MudText>
 </MudOverlay>
 
@@ -144,10 +144,10 @@
 
     private string _filename;
 
-    private bool overlayActive = true;
-    private Graph _graph { get; set; } = new();
-    private WorkflowLog _source_log { get; set; }
-    private WorkflowLog _log { get; set; }
+    private bool _overlayActive = true;
+    private Graph _graph = new();
+    private WorkflowLog _source_log;
+    private WorkflowLog _log;
     private HeuristicMinerSettings _minerSettings = new();
     private Miner _selectedMiner = Miner.Heuristic;
     private PetriNet _petriNet;
@@ -195,26 +195,25 @@
 
     private async Task UpdateGraph()
     {
-        overlayActive = true;
-        await Task.Run(() => // async, so the component is re-rendered
-        {
-            var log = _log.Clone();
-            WorkflowLogUtils.WorkflowLogPreprocessor(log, _hiddenActivities);
-            _petriNet = _selectedMiner switch {
-                Miner.Heuristic => HeuristicMiner.MinePetriNet(log, _minerSettings),
-                Miner.Alpha => Alpha.MakePetriNet(new RelationMatrix(log))
-                };
-            UpdateTraces();
-            ComputeFitness(log, _petriNet);
-        });
-        await _graph.RenderGraph(new GraphvizNet(_petriNet), _changedColors);
-        StateHasChanged();
+        _overlayActive = true;
+        await InvokeAsync(StateHasChanged); // to trigger overlay
+        var log = _log.Clone();
+        WorkflowLogUtils.WorkflowLogPreprocessor(log, _hiddenActivities, _hiddenTraces);
+        _petriNet = _selectedMiner switch {
+            Miner.Heuristic => HeuristicMiner.MinePetriNet(log, _minerSettings),
+            Miner.Alpha => Alpha.MakePetriNet(new RelationMatrix(log)),
+            _ => throw new ArgumentOutOfRangeException()
+        };
+        UpdateTraces();
+        ComputeFitness(log, _petriNet);
+        await _graph.RenderGraph(new GraphvizNet(_petriNet, log), _changedColors);
     }
 
+    
+    // called later from JS after the graph is rendered
     private void RemoveOverlay()
     {
-        overlayActive = false;
-        StateHasChanged();
+        _overlayActive = false;
     }
 
     private async Task SimplifyChanged(bool simplify)
