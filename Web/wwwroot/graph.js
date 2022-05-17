@@ -54,7 +54,6 @@ const rebuildContextMenu = () => {
             target: '.hasContextMenu',
             label: 'hide',
             execute: (ctx) => { 
-                console.log(ctx.target.parentNode.querySelector('text'));
                 csharpGraphRef.invokeMethodAsync('HideTransition', ctx.target.getAttribute("transitionId")) }
         },
         {
