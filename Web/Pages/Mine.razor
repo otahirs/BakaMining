@@ -151,15 +151,16 @@
     private HeuristicMinerSettings _minerSettings = new();
     private Miner _selectedMiner = Miner.Heuristic;
     private PetriNet _petriNet;
-    private Dictionary<WorkflowTrace, Tuple<AlignmentOnTrace, int>> _traces = new();
     private int _tracesMax;
     private int _tracesVisible;
     private int _tracesDistinct;
     private double _slider = 100;
     private bool _simplifyGraph = true;
     private double _alignmentFitness = 0;
-    private Dictionary<string, int> _activities = new();
+    private Dictionary<string, int> _activities = new(); // <activity, freq>
     private HashSet<string> _hiddenActivities = new();
+    private Dictionary<string, Tuple<List<string>, double, int>> _traces = new();  // <traces.join(), <fitness, freq>>
+    private Dictionary<string, List<string>> _hiddenTraces = new();
     private Dictionary<string, string> _changedColors = new();
 
     enum Miner
@@ -198,7 +199,7 @@
         _overlayActive = true;
         await InvokeAsync(StateHasChanged); // to trigger overlay
         var log = _log.Clone();
-        WorkflowLogUtils.WorkflowLogPreprocessor(log, _hiddenActivities, _hiddenTraces);
+        WorkflowLogUtils.WorkflowLogPreprocessor(log, _hiddenActivities, _hiddenTraces.Values.ToHashSet());
         _petriNet = _selectedMiner switch {
             Miner.Heuristic => HeuristicMiner.MinePetriNet(log, _minerSettings),
             Miner.Alpha => Alpha.MakePetriNet(new RelationMatrix(log)),
@@ -311,6 +312,25 @@
             await UpdateGraph();
         }
     }
+    
+    private async Task TraceVisibilityChanged(Tuple<string,List<string>, bool> args)
+    {
+        var key = args.Item1;
+        var trace = args.Item2;
+        var hidden = args.Item3;
+        if (hidden)
+        {
+            _hiddenTraces.Add(key, trace);
+        }
+        else
+        {
+            _hiddenTraces.Remove(key);
+        }
+        if (_petriNet is not null)
+        {
+            await UpdateGraph();
+        }
+    }
 
     private void ComputeFitness(WorkflowLog log, PetriNet  petriNet)
     {
@@ -318,9 +338,11 @@
         double worstAlignments = 0;
         try
         {
-            _traces = AlignmentUtils.OptimalAlignmentsOnLog(log, petriNet);
-            foreach (var (trace, (alignment, freq)) in _traces)
+            var alignments = AlignmentUtils.OptimalAlignmentsOnLog(log, petriNet);
+            foreach (var (trace, (alignment, freq)) in alignments)
             {
+                var key = string.Join(',', trace.Activities);
+                _traces[key] = Tuple.Create(trace.Activities, alignment.Fitness, freq);
                 optimalAlignments += freq * alignment.OptimalCost;
                 worstAlignments += freq * alignment.WorstCost;
             }
@@ -333,12 +355,19 @@
 
     }
 
+    // dialog parameters require manually created callback
+    private EventCallback<Tuple<string, List<string>,bool>> TraceVisibilityChangedHandler => new(this, (Action<Tuple<string, List<string>,bool>>)(async args =>
+    { await TraceVisibilityChanged(args); }));
+
+
     private void ShowTracesDialog()
     {
         DialogService.Show<DialogTraces>("Traces", 
             new DialogParameters
         {
-            ["Traces"] = _traces
+            { "Traces", _traces },
+            { "HiddenTraces", _hiddenTraces },
+            { "OnTraceVisibilityChanged", TraceVisibilityChangedHandler }
         }, new DialogOptions
         {
             CloseButton = true,
@@ -347,7 +376,7 @@
     }
 
     // dialog parameters require manually created callback
-    private EventCallback<Tuple<string,bool>> TransitionVisibilityChangedHandler => new(this, (Action<Tuple<string,bool>>)(async (args) =>
+    private EventCallback<Tuple<string,bool>> TransitionVisibilityChangedHandler => new(this, (Action<Tuple<string,bool>>)(async args =>
     { await TransitionVisibilityChanged(args); }));
     
     private void ShowTransitionsDialog()

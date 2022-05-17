@@ -1,5 +1,4 @@
-﻿@using ProcessM.NET.Model.DataAnalysis
-@using ProcessM.NET.ConformanceChecking.Alignments
+﻿@inject IDialogService DialogService
 
 <MudDialog>
     <TitleContent>
@@ -14,14 +13,29 @@
                     <MudTh>frequency</MudTh>
                     <MudTh>fitness</MudTh>
                     <MudTh>trace</MudTh>
+                    <MudTh>visible</MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     @{
-                        var (trace, (alignment,freq)) = context;
+                        var (key, (trace, fitness,freq)) = context;
                     }
                     <MudTd DataLabel="frequency">@freq</MudTd>
-                    <MudTd DataLabel="fitness">@($"{alignment.Fitness:0.00}")</MudTd>
-                    <MudTd DataLabel="trace">&lt;@string.Join(", ", trace.Activities.Where(t => t != "<<start>>" && t != "<<end>>"))&gt;</MudTd>
+                    <MudTd DataLabel="fitness">@($"{fitness:0.00}")</MudTd>
+                    <MudTd DataLabel="trace">&lt;@string.Join(", ", trace.Where(t => t != "<<start>>" && t != "<<end>>"))&gt;</MudTd>
+                    <MudTd DataLabel="visible">
+                        <MudToggleIconButton
+                            Toggled="HiddenTraces.ContainsKey(key)"
+                            ToggledChanged="() => TraceVisibilityChanged(key, trace, !HiddenTraces.ContainsKey(key))"
+                            Icon="@Icons.Filled.Check"
+                            Color="@Color.Default"
+                            Title="Shown"
+                            ToggledIcon="@Icons.Filled.HideSource"
+                            ToggledColor="@Color.Error"
+                            ToggledTitle="Hidden"
+                            Size="Size.Small"
+                            ToggledSize="Size.Small"
+                        />
+                    </MudTd>
                 </RowTemplate>
             </MudTable>
         </MudContainer>
@@ -33,5 +47,23 @@
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; }
 
-    [Parameter] public Dictionary<WorkflowTrace, Tuple<AlignmentOnTrace, int>> Traces { get; set; } = new();
+    [Parameter] public Dictionary<string, Tuple<List<string>, double, int>> Traces { get; set; } = new();
+    
+    [Parameter] public Dictionary<string, List<string>> HiddenTraces { get; set; } = new();
+    
+    [Parameter] public EventCallback<Tuple<string, List<string>, bool>> OnTraceVisibilityChanged { get; set; }
+    
+    private async Task TraceVisibilityChanged(string key, List<string> trace,  bool hide)
+    {
+        if (hide && Traces.Count == HiddenTraces.Count + 1)
+        {
+            await DialogService.ShowMessageBox("Cannot hide last activity", "");
+            return;
+        }
+        await OnTraceVisibilityChanged.InvokeAsync(Tuple.Create(key, trace, hide));
+        StateHasChanged();
+    }
+    
+    
+    
 }
