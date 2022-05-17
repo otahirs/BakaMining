@@ -26,10 +26,9 @@ namespace BakaMining
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
             builder.Services.AddMudServices();
             builder.Services.AddBlazorDownloadFile();
-            
             builder.Services.AddIndexedDB(dbStore =>
             {
-                dbStore.DbName = "BakaStorage";
+                dbStore.DbName = "BakaMiningStorage";
                 dbStore.Version = 1;
 
                 dbStore.Stores.Add(new StoreSchema
@@ -46,25 +45,15 @@ namespace BakaMining
             });
             builder.Services.AddScoped<EventLogStore>();
             builder.Services.AddScoped<PetriNetStore>();
-            
-            /* Does NOT work, see {workaround}
-            To deserialize JSON object from Interfaces in JSInterop globally.
-            https://github.com/dotnet/aspnetcore/issues/12685
-            builder.Services.Configure<JsonSerializerOptions>(options =>
-            {
-                options.Converters.Add(new AbstractConverter<IPlace, Place>());
-                options.Converters.Add(new AbstractConverter<ITransition, Transition>());
-            });
-            */
 
             var host = builder.Build();
             ConfigureProviders(host.Services);
             await host.RunAsync();
-            //await builder.Build().RunAsync();
         }
 
         // Messy {workaround}
         // To deserialize JSON object from Interfaces in JSInterop globally.
+        // https://github.com/dotnet/aspnetcore/issues/12685
         public static void ConfigureProviders(IServiceProvider services)
         {
             var jsRuntime = services.GetService<IJSRuntime>();

@@ -14,13 +14,11 @@ namespace BakaMining.Services.Storage
         {
             _storename = storename;
             _dbManager = dbManager;
-            _dbManager.ActionCompleted += OnIndexedDbNotification;
+            // _dbManager.ActionCompleted += OnIndexedDbNotification;
         }
 
         public Task Add(TStoredType file)
         {
-            //if (_nets.ContainsKey(file.Metadata.Name))
-            //    throw new ArgumentException();
             var newRecord = new StoreRecord<TStoredType>
             {
                 Storename = _storename,
@@ -45,9 +43,11 @@ namespace BakaMining.Services.Storage
             return _dbManager.GetRecordById<string, TStoredType>(_storename, filename);
         }
         
+        /*
         private void OnIndexedDbNotification(object sender, IndexedDBNotificationArgs args)
         {
             Console.WriteLine(args.Message);
         }
+        */
     }
 }

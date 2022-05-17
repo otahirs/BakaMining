@@ -53,9 +53,8 @@
                 _importedLog = CSVImport.MakeDataFrame(memoryString);
             }
             var result = await DialogService.Show<DialogLogProperties>(
-                "Set Activity & CaseId",
-                new DialogParameters { ["Log"] = _importedLog },
-                new DialogOptions { DisableBackdropClick = true, CloseButton = true }
+                "Set Activity & CaseId columns",
+                new DialogParameters { ["Log"] = _importedLog }
                 ).Result;
             if (!result.Cancelled)
             {
