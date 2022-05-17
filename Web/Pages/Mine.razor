@@ -146,7 +146,7 @@
 
     private bool _overlayActive = true;
     private Graph _graph = new();
-    private WorkflowLog _source_log;
+    private WorkflowLog _sourceLog;
     private WorkflowLog _log;
     private HeuristicMinerSettings _minerSettings = new();
     private Miner _selectedMiner = Miner.Heuristic;
@@ -178,7 +178,7 @@
             }
             var logFile = await EventLogStore.Get(Key);
             _filename = logFile.Metadata.Name;
-            _log = _source_log = logFile.EventLog;
+            _log = _sourceLog = logFile.EventLog;
             _tracesMax = _tracesVisible = _log.WorkflowTraces.Count;
             await UpdateGraph();
         }
@@ -189,7 +189,7 @@
         _slider = visiblePercentage;
         var tracesCount = Convert.ToInt32(_tracesMax * visiblePercentage / 100) ;
         _tracesVisible = tracesCount > 0 ? tracesCount : 1;
-        _log = new WorkflowLog(_source_log.WorkflowTraces.Take(_tracesVisible).ToList());
+        _log = new WorkflowLog(_sourceLog.WorkflowTraces.Take(_tracesVisible).ToList());
         UpdateTraces();
     }
 
