@@ -148,27 +148,33 @@
     private Graph _graph = new();
     private WorkflowLog _sourceLog;
     private WorkflowLog _log;
-    private HeuristicMinerSettings _minerSettings = new();
-    private Miner _selectedMiner = Miner.Heuristic;
     private PetriNet _petriNet;
+    
+    enum Miner
+    {
+        Alpha,
+        Heuristic
+    }
+    private Miner _selectedMiner = Miner.Heuristic;
+    
+    private HeuristicMinerSettings _minerSettings = new();
+    
     private int _tracesMax;
     private int _tracesVisible;
     private int _tracesDistinct;
     private double _slider = 100;
-    private bool _simplifyGraph = true;
+    
     private double _alignmentFitness = 0;
+
+    private bool _simplifyGraph = true;
+    
     private Dictionary<string, int> _activities = new(); // <activity, freq>
     private HashSet<string> _hiddenActivities = new();
     private Dictionary<string, Tuple<List<string>, double, int>> _traces = new();  // <traces.join(), <fitness, freq>>
     private Dictionary<string, List<string>> _hiddenTraces = new();
     private Dictionary<string, string> _changedColors = new();
 
-    enum Miner
-    {
-        Alpha,
-        Heuristic
-    }
-
+    
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -183,15 +189,6 @@
             _tracesMax = _tracesVisible = _log.WorkflowTraces.Count;
             await UpdateGraph();
         }
-    }
-
-    private void FilterLog(double visiblePercentage)
-    {
-        _slider = visiblePercentage;
-        var tracesCount = Convert.ToInt32(_tracesMax * visiblePercentage / 100) ;
-        _tracesVisible = tracesCount > 0 ? tracesCount : 1;
-        _log = new WorkflowLog(_sourceLog.WorkflowTraces.Take(_tracesVisible).ToList());
-        UpdateTraces();
     }
 
     private async Task UpdateGraph()
@@ -210,7 +207,6 @@
         await _graph.RenderGraph(new GraphvizNet(_petriNet, log), _changedColors);
     }
 
-    
     // called later from JS after the graph is rendered
     private void RemoveOverlay()
     {
@@ -222,32 +218,14 @@
         _simplifyGraph = simplify;
         await _graph.Simplify(simplify);
     }
-    
-    private async Task SaveModel()
-    {
-        var petriNetFile = new PetriNetFile
-        {
-            PetriNet = _petriNet,
-            Metadata = new FileMetadata()
-            {
-                Modified = DateTimeOffset.Now,
-                Size =  System.Text.Encoding.UTF8.GetBytes(PNMLExport.Serialize(_petriNet)).Length,
-                Name = _filename.Substring(0, _filename.Length - 4)
-            }
-        };
-        await PetriNetStore.Add(petriNetFile);
-    }
 
-    private async Task DownloadPNML()
+    private void FilterLog(double visiblePercentage)
     {
-        var file = System.Text.Encoding.UTF8.GetBytes(PNMLExport.Serialize(_petriNet));
-        await DownloadFileService.DownloadFileAsync(_filename.Substring(0, _filename.Length - 3) + "pnml", file);
-    }
-    
-    private async Task DownloadDOT()
-    {
-        var file = System.Text.Encoding.UTF8.GetBytes(DOTExport.Serialize(_petriNet));
-        await DownloadFileService.DownloadFileAsync(_filename.Substring(0, _filename.Length - 3)  + "dot", file);
+        _slider = visiblePercentage;
+        var tracesCount = Convert.ToInt32(_tracesMax * visiblePercentage / 100) ;
+        _tracesVisible = tracesCount > 0 ? tracesCount : 1;
+        _log = new WorkflowLog(_sourceLog.WorkflowTraces.Take(_tracesVisible).ToList());
+        UpdateTraces();
     }
 
     private void UpdateTraces()
@@ -286,6 +264,28 @@
         _activities.Remove("<<start>>");
         _activities.Remove("<<end>>");
         _activities.Remove("");
+    }
+
+    private void ComputeFitness(WorkflowLog log, PetriNet  petriNet)
+    {
+        double optimalAlignments = 0;
+        double worstAlignments = 0;
+        try
+        {
+            var alignments = AlignmentUtils.OptimalAlignmentsOnLog(log, petriNet);
+            foreach (var (trace, (alignment, freq)) in alignments)
+            {
+                var key = string.Join(',', trace.Activities);
+                _traces[key] = Tuple.Create(trace.Activities, alignment.Fitness, freq);
+                optimalAlignments += freq * alignment.OptimalCost;
+                worstAlignments += freq * alignment.WorstCost;
+            }
+            _alignmentFitness = 1 - optimalAlignments / worstAlignments;
+        }
+        catch (ArgumentException)
+        {
+            _alignmentFitness = -1;
+        }
     }
 
     private void TransitionColorChanged((string, string) args)
@@ -331,34 +331,11 @@
             await UpdateGraph();
         }
     }
-
-    private void ComputeFitness(WorkflowLog log, PetriNet  petriNet)
-    {
-        double optimalAlignments = 0;
-        double worstAlignments = 0;
-        try
-        {
-            var alignments = AlignmentUtils.OptimalAlignmentsOnLog(log, petriNet);
-            foreach (var (trace, (alignment, freq)) in alignments)
-            {
-                var key = string.Join(',', trace.Activities);
-                _traces[key] = Tuple.Create(trace.Activities, alignment.Fitness, freq);
-                optimalAlignments += freq * alignment.OptimalCost;
-                worstAlignments += freq * alignment.WorstCost;
-            }
-            _alignmentFitness = 1 - optimalAlignments / worstAlignments;
-        }
-        catch (ArgumentException)
-        {
-            _alignmentFitness = -1;
-        }
-
-    }
+    
 
     // dialog parameters require manually created callback
     private EventCallback<Tuple<string, List<string>,bool>> TraceVisibilityChangedHandler => new(this, (Action<Tuple<string, List<string>,bool>>)(async args =>
     { await TraceVisibilityChanged(args); }));
-
 
     private void ShowTracesDialog()
     {
@@ -389,5 +366,31 @@
         };
         DialogService.Show<DialogTransitions>("Activities",  parameters, new DialogOptions{ CloseButton = true, FullWidth = true });
     }
+    
+    private async Task SaveModel()
+    {
+        var petriNetFile = new PetriNetFile
+        {
+            PetriNet = _petriNet,
+            Metadata = new FileMetadata()
+            {
+                Modified = DateTimeOffset.Now,
+                Size =  System.Text.Encoding.UTF8.GetBytes(PNMLExport.Serialize(_petriNet)).Length,
+                Name = _filename.Substring(0, _filename.Length - 4)
+            }
+        };
+        await PetriNetStore.Add(petriNetFile);
+    }
 
+    private async Task DownloadPNML()
+    {
+        var file = System.Text.Encoding.UTF8.GetBytes(PNMLExport.Serialize(_petriNet));
+        await DownloadFileService.DownloadFileAsync(_filename.Substring(0, _filename.Length - 3) + "pnml", file);
+    }
+    
+    private async Task DownloadDOT()
+    {
+        var file = System.Text.Encoding.UTF8.GetBytes(DOTExport.Serialize(_petriNet));
+        await DownloadFileService.DownloadFileAsync(_filename.Substring(0, _filename.Length - 3)  + "dot", file);
+    }
 }
