@@ -4,38 +4,7 @@
 @using System.Threading
 @using ProcessM.NET.Model.GraphvizNet
 @inject IJSRuntime JS
-<style>
-    .node {
-        fill: #ccc;
-        stroke: #000;
-    }
-    
-    .node text {
-        fill: black;
-        stroke: none;
-    }
-   
-    .link {
-        stroke: #777;
-        stroke-width: 2px;
-    }
-       
-    .svg-container {
-        width: 100%;
-    }
-    
-    svg {
-        height: 100%;
-        width: 100%;
-    }
-    
-    .context-menu {
-        --context-menu-background-color: white;
-        --context-menu-shadow: 0 4px 5px 0 rgba(0,0,0,0.14);
-        --anypoint-item-before-background: none;
-        --anypoint-item-focused-background-color: inherit;
-    }
-</style>
+
 @if (_graphvizNet == null)
 {
     <MudText>Let's mine</MudText>
