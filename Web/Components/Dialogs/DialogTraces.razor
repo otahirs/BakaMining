@@ -1,4 +1,5 @@
-﻿@inject IDialogService DialogService
+﻿@using ProcessM.NET.ConformanceChecking.Alignments
+@inject IDialogService DialogService
 
 <MudDialog>
     <TitleContent>
@@ -17,11 +18,34 @@
                 </HeaderContent>
                 <RowTemplate>
                     @{
-                        var (key, (trace, fitness,freq)) = context;
+                        var (key, (trace, freq,alignment)) = context;
                     }
                     <MudTd DataLabel="frequency">@freq</MudTd>
-                    <MudTd DataLabel="fitness">@($"{fitness:0.00}")</MudTd>
-                    <MudTd DataLabel="trace">&lt;@string.Join(", ", trace.Where(t => t != "<<start>>" && t != "<<end>>"))&gt;</MudTd>
+                    <MudTd DataLabel="fitness">@($"{alignment.Fitness:0.00}")</MudTd>
+                    <MudTd DataLabel="trace" style="white-space: nowrap;">
+                        &lt;
+                        @for (var i = 0; i < alignment.Transitions.Count; i++)
+                        {
+                            var transition = alignment.Transitions[i];
+                            if (transition.Activity == "" || transition.Activity == "<<start>>" || transition.Activity == "<<end>>")
+                            {
+                                continue;
+                            }
+                            @if (transition.Cost != 0)
+                            {
+                                <span style="color:red;">@transition.Activity</span>
+                            }
+                            else
+                            {
+                                @transition.Activity
+                            }
+                            if (i != alignment.Transitions.Count - 3)
+                            {
+                                <span>,&nbsp;</span>
+                            }
+                        }
+                        &gt;
+                    </MudTd>
                     <MudTd DataLabel="visible">
                         <MudToggleIconButton
                             Toggled="HiddenTraces.ContainsKey(key)"
@@ -47,7 +71,7 @@
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; }
 
-    [Parameter] public Dictionary<string, Tuple<List<string>, double, int>> Traces { get; set; } = new();
+    [Parameter] public Dictionary<string, Tuple<List<string>, int, AlignmentOnTrace>> Traces { get; set; } = new();
     
     [Parameter] public Dictionary<string, List<string>> HiddenTraces { get; set; } = new();
     

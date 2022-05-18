@@ -174,7 +174,7 @@
     
     private Dictionary<string, int> _activities = new(); // <activity, freq>
     private HashSet<string> _hiddenActivities = new();
-    private Dictionary<string, Tuple<List<string>, double, int>> _traces = new();  // <traces.join(), <fitness, freq>>
+    private Dictionary<string, Tuple<List<string>, int, AlignmentOnTrace>> _traces = new();  // <traces.join(), <trace, frequency, alignment>>
     private Dictionary<string, List<string>> _hiddenTraces = new();
     private Dictionary<string, string> _changedColors = new();
 
@@ -293,7 +293,7 @@
             foreach (var (trace, (alignment, freq)) in alignments)
             {
                 var key = string.Join(',', trace.Activities);
-                _traces[key] = Tuple.Create(trace.Activities, alignment.Fitness, freq);
+                _traces[key] = Tuple.Create(trace.Activities, freq, alignment);
                 optimalAlignments += alignment.OptimalCost * (_distinctFitness ? 1 : freq);
                 worstAlignments += alignment.WorstCost * (_distinctFitness ? 1 : freq);
             }
@@ -365,7 +365,7 @@
         }, new DialogOptions
         {
             CloseButton = true,
-            FullWidth = true
+            MaxWidth = MaxWidth.ExtraLarge
         });
     }
 
@@ -381,7 +381,12 @@
             { "HiddenTransitions", _hiddenActivities },
             { "OnTransitionVisibilityChanged", TransitionVisibilityChangedHandler }
         };
-        DialogService.Show<DialogTransitions>("Activities",  parameters, new DialogOptions{ CloseButton = true, FullWidth = true });
+        DialogService.Show<DialogTransitions>("Activities",  parameters, 
+            new DialogOptions
+            {
+                CloseButton = true,
+                MaxWidth = MaxWidth.ExtraLarge
+            });
     }
     
     private async Task SaveModel()
