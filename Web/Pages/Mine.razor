@@ -107,6 +107,9 @@
             {
                 <MudText Typo="Typo.body1">Fitness: @string.Format("{0:0.00}", _alignmentFitness * 100) %</MudText>
                 <MudProgressLinear Color="Color.Info" Size="Size.Small" Min="0" Max="1" Value="@_alignmentFitness" Class="my-4"/>
+                <MudTooltip Text="Do not take traces frequency into account.">
+                    <MudSwitch Color="Color.Primary" Checked="_distinctFitness" T="bool" CheckedChanged="DistinctFitnessChanged" Label="ignore frequency" />
+                </MudTooltip>
             }
             </MudCardContent>
         </MudCard>
@@ -118,7 +121,7 @@
         </MudCard>
         <MudCard Elevation="0" Class="my-4">
             <MudCardContent>
-                <MudSwitch Color="Color.Primary" T="bool" Label="Simplify graph" Checked="_simplifyGraph" CheckedChanged="SimplifyChanged" />
+                <MudSwitch Color="Color.Primary" T="bool" Label="simplify graph" Checked="_simplifyGraph" CheckedChanged="SimplifyChanged" />
             </MudCardContent>
         </MudCard>
         @if (_petriNet != null)
@@ -165,6 +168,7 @@
     private double _slider = 100;
     
     private double _alignmentFitness = 0;
+    private bool _distinctFitness = false;
 
     private bool _simplifyGraph = true;
     
@@ -195,14 +199,13 @@
     {
         _overlayActive = true;
         await InvokeAsync(StateHasChanged); // to trigger overlay
-        var log = _log.Clone();
-        WorkflowLogUtils.WorkflowLogPreprocessor(log, _hiddenActivities, _hiddenTraces.Values.ToHashSet());
+        var log = PreprocessLogCopy();
         _petriNet = _selectedMiner switch {
             Miner.Heuristic => HeuristicMiner.MinePetriNet(log, _minerSettings),
             Miner.Alpha => Alpha.MakePetriNet(new RelationMatrix(log)),
             _ => throw new ArgumentOutOfRangeException()
         };
-        UpdateTraces();
+        UpdateActivities();
         ComputeFitness(log, _petriNet);
         await _graph.RenderGraph(new GraphvizNet(_petriNet, log), _changedColors);
     }
@@ -218,6 +221,13 @@
         _simplifyGraph = simplify;
         await _graph.Simplify(simplify);
     }
+    
+    private void DistinctFitnessChanged(bool distinct)
+    {
+        _distinctFitness = distinct;
+        var log = PreprocessLogCopy();
+        ComputeFitness(log, _petriNet);
+    }
 
     private void FilterLog(double visiblePercentage)
     {
@@ -225,13 +235,20 @@
         var tracesCount = Convert.ToInt32(_tracesMax * visiblePercentage / 100) ;
         _tracesVisible = tracesCount > 0 ? tracesCount : 1;
         _log = new WorkflowLog(_sourceLog.WorkflowTraces.Take(_tracesVisible).ToList());
-        UpdateTraces();
+        UpdateActivities();
     }
 
-    private void UpdateTraces()
+    private WorkflowLog PreprocessLogCopy()
+    {
+        var log = _log.Clone();
+        WorkflowLogUtils.WorkflowLogPreprocessor(log, _hiddenActivities, _hiddenTraces.Values.ToHashSet());
+        return log;
+    }
+
+    private void UpdateActivities()
     {
         _activities.Clear();
-        int count = 0;
+        var count = 0;
         var lastTrace = new List<string>();
         foreach (var trace in _log.WorkflowTraces)
         {
@@ -249,10 +266,10 @@
             }
         }
         _tracesDistinct = count;
-        UpdateTracesFreq();
+        UpdateActivitiesFreq();
     }
     
-    private void UpdateTracesFreq()
+    private void UpdateActivitiesFreq()
     {
         if (_petriNet != null)
         {
@@ -277,8 +294,8 @@
             {
                 var key = string.Join(',', trace.Activities);
                 _traces[key] = Tuple.Create(trace.Activities, alignment.Fitness, freq);
-                optimalAlignments += freq * alignment.OptimalCost;
-                worstAlignments += freq * alignment.WorstCost;
+                optimalAlignments += alignment.OptimalCost * (_distinctFitness ? 1 : freq);
+                worstAlignments += alignment.WorstCost * (_distinctFitness ? 1 : freq);
             }
             _alignmentFitness = 1 - optimalAlignments / worstAlignments;
         }
