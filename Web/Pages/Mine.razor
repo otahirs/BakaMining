@@ -121,7 +121,9 @@
         </MudCard>
         <MudCard Elevation="0" Class="my-4">
             <MudCardContent>
-                <MudSwitch Color="Color.Primary" T="bool" Label="simplify graph" Checked="_simplifyGraph" CheckedChanged="SimplifyChanged" />
+                <MudTooltip Text="Display source petri net instead of the simplified model.">
+                    <MudSwitch Color="Color.Primary" T="bool" Label="source petri net" Checked="!_simplifyGraph" CheckedChanged="SimplifyChanged"/>
+                </MudTooltip>
             </MudCardContent>
         </MudCard>
         @if (_petriNet != null)
@@ -216,10 +218,10 @@
         _overlayActive = false;
     }
 
-    private async Task SimplifyChanged(bool simplify)
+    private async Task SimplifyChanged(bool displaySource)
     {
-        _simplifyGraph = simplify;
-        await _graph.Simplify(simplify);
+        _simplifyGraph = !displaySource;
+        await _graph.Simplify(_simplifyGraph);
     }
     
     private void DistinctFitnessChanged(bool distinct)
